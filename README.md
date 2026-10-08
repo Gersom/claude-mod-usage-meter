@@ -25,8 +25,10 @@ Recuadro con borde y una barra por medida, con el texto de restablecimiento al l
 ╰───────────────────────────────────────────────────────────────────╯
 ```
 
-- **Color por umbral:** verde hasta 70%, amarillo de 70% a 90%, rojo desde 90%.
-- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`).
+- **Colores por medida:** `Contexto` en azul (`#60a5fa`); `5 horas` y `Semana` en violeta (`#a78bfa`). Las etiquetas siempre llevan su color.
+- **Barra:** en reposo, su color es el del umbral: verde hasta 70%, amarillo de 70% a 90%, rojo desde 90%. Al cambiar el porcentaje se anima en color de la medida y luego vuelve al del umbral. Los bloques vacíos van en gris tenue.
+- **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
+- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Si no cabe en la línea, pasa a una segunda línea debajo de la barra.
 
 ## Tipo y fuente de datos
 
@@ -42,7 +44,6 @@ Recuadro con borde y una barra por medida, con el texto de restablecimiento al l
 ## Por decidir al construirlo
 
 - Si el "uso del plan" es algo distinto a las ventanas de 5 horas y semanal. La API solo expone esas dos (y un `spend_limit` en gateways), así que por ahora el mod las toma como "uso del plan".
-- Ancho del recuadro en terminales angostas (la línea de restablecimiento puede pasar a una segunda línea o recortar el tiempo relativo).
 
 ## Uso
 
@@ -67,12 +68,13 @@ usage-meter/
 ├── hooks/
 │   ├── hooks.json               # apunta a register.tsx
 │   ├── register.tsx             # hooks: session.start, session.measure, ui.render
-│   ├── format.ts                # lógica pura: barra, color, fechas, ajuste al ancho
+│   ├── format.ts                # lógica pura: barra, color, fechas, filas, ajuste al ancho
 │   └── *.test.ts                # tests (lógica y render)
-└── types/index.d.ts             # contrato del estado ($.state)
+└── types/index.d.ts             # contrato del estado ($.state): usage y shown (porcentaje mostrado por fila)
 ```
 
 ## Limitaciones conocidas
 
 - El tiempo relativo se recalcula en cada medición (después de cada turno), no segundo a segundo.
-- Terminales angostas: si el texto de restablecimiento no cabe, se quita primero la fecha entre paréntesis y luego todo el texto.
+- Terminales angostas: si el texto de restablecimiento no cabe en la línea, pasa a una segunda línea; no se recorta.
+- Los tests no cubren la animación; se verificó a mano en sesión (tema oscuro).
