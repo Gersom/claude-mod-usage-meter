@@ -2,8 +2,13 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage } from '../types'
-import { contextRow, fitReset, head, rowOf } from './format'
+import { contextRow, fitReset, rowOf } from './format'
 import type { Row } from './format'
+
+const LABEL_WIDTH = 9
+const BAR_WIDTH = 11
+const PERCENT_WIDTH = 5
+const GAP = 3
 
 const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 
@@ -52,15 +57,23 @@ export const register: Register = on => {
 
     const { Box, Text } = $.ui.resolve(e)
     const columns = e.props.bodyColumns - 4
+    const resets = rows.map(row => fitReset(row, columns))
 
     return (
       <Box borderStyle="round" borderColor="gray" paddingX={1} flexDirection="column">
-        {rows.map(row => (
+        <Text bold>Uso</Text>
+        {rows.map((row, i) => (
           <Box key={row.label}>
-            <Text>{row.label.padEnd(9)} </Text>
-            <Text color={row.level}>{row.bar}</Text>
-            <Text> {String(row.percent).padStart(3)}%</Text>
-            <Text dimColor>{fitReset(row, columns) ? `   ${fitReset(row, columns)}` : ''}</Text>
+            <Box width={LABEL_WIDTH}>
+              <Text>{row.label}</Text>
+            </Box>
+            <Box width={BAR_WIDTH}>
+              <Text color={row.level}>{row.bar}</Text>
+            </Box>
+            <Box width={PERCENT_WIDTH} justifyContent="flex-end">
+              <Text>{`${row.percent}%`}</Text>
+            </Box>
+            <Text dimColor>{resets[i] ? `${' '.repeat(GAP)}${resets[i]}` : ''}</Text>
           </Box>
         ))}
       </Box>

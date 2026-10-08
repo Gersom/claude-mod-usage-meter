@@ -17,7 +17,8 @@ Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcenta
 Recuadro con borde y una barra por medida, con el texto de restablecimiento al lado:
 
 ```
-╭─ Uso ─────────────────────────────────────────────────────────────╮
+╭───────────────────────────────────────────────────────────────────╮
+│ Uso                                                               │
 │ Contexto  ████░░░░░░  42%                                         │
 │ 5 horas   ██░░░░░░░░  23%   Restablece en 2 h 10 min (hoy 18:40)  │
 │ Semana    █░░░░░░░░░   7%   Restablece en 3 d 4 h (lun 09 de oct) │
@@ -73,6 +74,5 @@ usage-meter/
 
 ## Limitaciones conocidas
 
-- El título «Uso» va como primera fila dentro del recuadro, no incrustado en el borde.
 - El tiempo relativo se recalcula en cada medición (después de cada turno), no segundo a segundo.
 - Terminales angostas: si el texto de restablecimiento no cabe, se quita primero la fecha entre paréntesis y luego todo el texto.
