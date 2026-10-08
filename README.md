@@ -17,15 +17,15 @@ Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcenta
 Recuadro con borde y una barra por medida, con el texto de restablecimiento al lado:
 
 ```
-╭─ Uso ───────────────────────────────────────────────────────────────────╮
-│ Contexto  ████░░░░░░  42%                                               │
-│ 5 horas   ██░░░░░░░░  23%   se restablece hoy 18:40 (en 2 h 10 min)     │
-│ Semana    █░░░░░░░░░   7%   se restablece lun 09 oct 03:00 (en 3 d 4 h) │
-╰─────────────────────────────────────────────────────────────────────────╯
+╭─ Uso ─────────────────────────────────────────────────────────────╮
+│ Contexto  ████░░░░░░  42%                                         │
+│ 5 horas   ██░░░░░░░░  23%   Restablece en 2 h 10 min (hoy 18:40)  │
+│ Semana    █░░░░░░░░░   7%   Restablece en 3 d 4 h (lun 09 de oct) │
+╰───────────────────────────────────────────────────────────────────╯
 ```
 
 - **Color por umbral:** verde hasta 70%, amarillo de 70% a 90%, rojo desde 90%.
-- **Restablecimiento:** hora exacta y tiempo relativo. El límite de 5 horas muestra solo la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra el día de la semana y la fecha (`lun 09 oct 03:00`).
+- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`).
 
 ## Tipo y fuente de datos
 
