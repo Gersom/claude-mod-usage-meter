@@ -17,11 +17,11 @@ Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcenta
 Recuadro con borde y una barra por medida, con el texto de restablecimiento al lado:
 
 ```
-╭─ Uso ───────────────────────────────────────────────────────╮
-│ Contexto  ████░░░░░░  42%                                   │
-│ 5 horas   ██░░░░░░░░  23%   se restablece hoy 18:40 (en 2 h 10 min)   │
-│ Semana    ░░░░░░░░░░   7%   se restablece lun 09 oct 03:00 (en 3 d 4 h) │
-╰─────────────────────────────────────────────────────────────╯
+╭─ Uso ───────────────────────────────────────────────────────────────────╮
+│ Contexto  ████░░░░░░  42%                                               │
+│ 5 horas   ██░░░░░░░░  23%   se restablece hoy 18:40 (en 2 h 10 min)     │
+│ Semana    █░░░░░░░░░   7%   se restablece lun 09 oct 03:00 (en 3 d 4 h) │
+╰─────────────────────────────────────────────────────────────────────────╯
 ```
 
 - **Color por umbral:** verde hasta 70%, amarillo de 70% a 90%, rojo desde 90%.
