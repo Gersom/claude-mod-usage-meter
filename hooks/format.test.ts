@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { bar, fitReset, head, level, longDate, relative, resetText, rowOf, shortDate } from './format'
+import { bar, barParts, contextRow, inlineFits, level, longDate, relative, resetText, rowOf, rowsOf, shortDate, withPercent } from './format'
 
 describe('level', () => {
   test('green up to 70, yellow above 70, red from 90', () => {
@@ -24,6 +24,14 @@ describe('bar', () => {
   test('clamps out-of-range values', () => {
     expect(bar(-5)).toBe('░░░░░░░░░░')
     expect(bar(140)).toBe('██████████')
+  })
+})
+
+describe('barParts', () => {
+  test('splits the bar into filled and empty cells', () => {
+    expect(barParts(42)).toEqual({ filled: '████', empty: '░░░░░░' })
+    expect(barParts(0)).toEqual({ filled: '', empty: '░░░░░░░░░░' })
+    expect(barParts(100)).toEqual({ filled: '██████████', empty: '' })
   })
 })
 
@@ -84,23 +92,70 @@ describe('rowOf', () => {
     expect(rowOf({ kind: 'seven_day', percentUsed: 7 }, now)?.label).toBe('Semana')
     expect(rowOf({ kind: 'spend_limit', percentUsed: 50 }, now)).toBeNull()
   })
+
+  test('keys the row by its limit kind and colors it as a limit', () => {
+    const row = rowOf({ kind: 'five_hour', percentUsed: 23 }, now)
+
+    expect(row?.key).toBe('five_hour')
+    expect(row?.accent).toBe('#a78bfa')
+  })
 })
 
-describe('fitReset', () => {
-  const row = {
-    label: '5 horas',
-    percent: 23,
-    level: 'green' as const,
-    bar: bar(23),
-    reset: 'Restablece en 2 h 10 min (hoy 18:40)'
-  }
+describe('rowsOf', () => {
+  const now = new Date(2026, 9, 8, 16, 30).getTime()
 
-  test('whole when it fits', () => {
-    expect(fitReset(row, 80)).toBe(row.reset)
+  test('context first, then the plan windows in the order given', () => {
+    const rows = rowsOf(
+      { context: 42, limits: [{ kind: 'seven_day', percentUsed: 7 }, { kind: 'spend_limit', percentUsed: 1 }] },
+      now
+    )
+
+    expect(rows.map(row => row.key)).toEqual(['context', 'seven_day'])
   })
 
-  test('drops the date, then everything, as the room shrinks', () => {
-    expect(fitReset(row, head(row).length + 3 + 'Restablece en 2 h 10 min'.length)).toBe('Restablece en 2 h 10 min')
-    expect(fitReset(row, head(row).length + 3)).toBe('')
+  test('no context reading leaves the context row out', () => {
+    expect(rowsOf({ context: null, limits: [] }, now)).toEqual([])
+  })
+})
+
+describe('contextRow', () => {
+  test('is colored blue and has no reset text', () => {
+    const row = contextRow(42)
+
+    expect(row.accent).toBe('#60a5fa')
+    expect(row.reset).toBe('')
+  })
+})
+
+describe('withPercent', () => {
+  test('shows another percent with its own bar, keeping the rest of the row', () => {
+    const row = contextRow(90)
+    const moved = withPercent(row, 40)
+
+    expect(moved.percent).toBe(40)
+    expect(moved.bar).toBe('████░░░░░░')
+    expect(moved.label).toBe('Contexto')
+    expect(moved.level).toBe('red')
+  })
+})
+
+describe('inlineFits', () => {
+  const now = new Date(2026, 9, 8, 16, 30).getTime()
+  const at = new Date(2026, 9, 8, 18, 40).toISOString()
+  const row = rowOf({ kind: 'five_hour', percentUsed: 23, resetsAt: at }, now)!
+
+  test('fits on the line when the terminal is wide enough', () => {
+    expect(inlineFits(row, 80)).toBe(true)
+  })
+
+  test('does not fit when the reset text would overflow', () => {
+    const headWidth = 25
+
+    expect(inlineFits(row, headWidth + 3 + row.reset.length)).toBe(true)
+    expect(inlineFits(row, headWidth + 3 + row.reset.length - 1)).toBe(false)
+  })
+
+  test('a row with no reset text always fits', () => {
+    expect(inlineFits(contextRow(42), 10)).toBe(true)
   })
 })

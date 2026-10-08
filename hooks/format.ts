@@ -1,14 +1,19 @@
-import type { UsageLimit } from '../types'
+import type { Usage, UsageLimit } from '../types'
 
 export type Level = 'green' | 'yellow' | 'red'
 
 export type Row = {
+  key: string
   label: string
   percent: number
   level: Level
+  accent: string
   bar: string
   reset: string
 }
+
+export const CONTEXT_ACCENT = '#60a5fa'
+export const LIMIT_ACCENT = '#a78bfa'
 
 const BAR_CELLS = 10
 const DAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
@@ -25,10 +30,19 @@ export const clampPercent = (percent: number) => Math.max(0, Math.min(100, Math.
 
 export const level = (percent: number): Level => (percent >= 90 ? 'red' : percent > 70 ? 'yellow' : 'green')
 
+const filledCells = (percent: number) => Math.round((clampPercent(percent) / 100) * BAR_CELLS)
+
 export const bar = (percent: number) => {
-  const filled = Math.round((clampPercent(percent) / 100) * BAR_CELLS)
+  const filled = filledCells(percent)
 
   return '█'.repeat(filled) + '░'.repeat(BAR_CELLS - filled)
+}
+
+/** The bar split in its filled and empty cells, so each can take its own color. */
+export const barParts = (percent: number) => {
+  const filled = filledCells(percent)
+
+  return { filled: '█'.repeat(filled), empty: '░'.repeat(BAR_CELLS - filled) }
 }
 
 /** `2 h 10 min`, `3 d 4 h`, `45 min`; `menos de 1 min` below a minute. */
@@ -77,30 +91,51 @@ export const rowOf = (limit: UsageLimit, nowMs: number): Row | null => {
 
   const percent = clampPercent(limit.percentUsed)
 
-  return { label, percent, level: level(percent), bar: bar(percent), reset: resetText(limit.kind, limit.resetsAt, nowMs) }
+  return {
+    key: limit.kind,
+    label,
+    percent,
+    level: level(percent),
+    accent: LIMIT_ACCENT,
+    bar: bar(percent),
+    reset: resetText(limit.kind, limit.resetsAt, nowMs)
+  }
 }
 
 export const contextRow = (percent: number): Row => {
   const p = clampPercent(percent)
 
-  return { label: 'Contexto', percent: p, level: level(p), bar: bar(p), reset: '' }
+  return { key: 'context', label: 'Contexto', percent: p, level: level(p), accent: CONTEXT_ACCENT, bar: bar(p), reset: '' }
+}
+
+/** Every row the meter shows for a usage reading, in display order. */
+export const rowsOf = (usage: Usage, nowMs: number): Row[] => {
+  const rows: Row[] = []
+
+  if (usage.context !== null) rows.push(contextRow(usage.context))
+
+  for (const limit of usage.limits) {
+    const row = rowOf(limit, nowMs)
+
+    if (row) rows.push(row)
+  }
+
+  return rows
+}
+
+/** The same row showing `percent` instead of its own, as an animation steps toward it. */
+export const withPercent = (row: Row, percent: number): Row => {
+  const p = clampPercent(percent)
+
+  return { ...row, percent: p, bar: bar(p) }
 }
 
 /** The part of a row left of its reset text: label, bar and percent. */
 export const head = (row: Row) => `${row.label.padEnd(9)} ${row.bar} ${String(row.percent).padStart(3)}%`
 
-/**
- * Reset text that fits `columns`: whole, then without the parenthesised date,
- * then none.
- */
-export const fitReset = (row: Row, columns: number) => {
-  if (!row.reset) return ''
+/** Whether the reset text fits on the row's line within `columns`. */
+export const inlineFits = (row: Row, columns: number) => {
+  if (!row.reset) return true
 
-  const room = columns - head(row).length - 3
-
-  if (row.reset.length <= room) return row.reset
-
-  const short = row.reset.replace(/ \(.*\)$/, '')
-
-  return short.length <= room ? short : ''
+  return head(row).length + 3 + row.reset.length <= columns
 }
