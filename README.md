@@ -42,3 +42,37 @@ Recuadro con borde y una barra por medida, con el texto de restablecimiento al l
 
 - Si el "uso del plan" es algo distinto a las ventanas de 5 horas y semanal. La API solo expone esas dos (y un `spend_limit` en gateways), así que por ahora el mod las toma como "uso del plan".
 - Ancho del recuadro en terminales angostas (la línea de restablecimiento puede pasar a una segunda línea o recortar el tiempo relativo).
+
+## Uso
+
+Cargar el mod en una sesión de Claude Code (terminal):
+
+```bash
+claude --plugin-dir mods/usage-meter
+```
+
+Probar y validar:
+
+```bash
+claude plugin validate mods/usage-meter
+claude plugin test mods/usage-meter
+```
+
+## Estructura
+
+```
+usage-meter/
+├── .claude-plugin/plugin.json   # manifiesto
+├── hooks/
+│   ├── hooks.json               # apunta a register.tsx
+│   ├── register.tsx             # hooks: session.start, session.measure, ui.render
+│   ├── format.ts                # lógica pura: barra, color, fechas, ajuste al ancho
+│   └── *.test.ts                # tests (lógica y render)
+└── types/index.d.ts             # contrato del estado ($.state)
+```
+
+## Limitaciones conocidas
+
+- El título «Uso» va como primera fila dentro del recuadro, no incrustado en el borde.
+- El tiempo relativo se recalcula en cada medición (después de cada turno), no segundo a segundo.
+- Terminales angostas: si el texto de restablecimiento no cabe, se quita primero la fecha entre paréntesis y luego todo el texto.
