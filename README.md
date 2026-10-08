@@ -26,7 +26,7 @@ Recuadro con borde y una barra por medida, con el texto de restablecimiento al l
 ```
 
 - **Colores por medida:** `Contexto` en azul (`#60a5fa`); `5 horas` y `Semana` en violeta (`#a78bfa`). Las etiquetas siempre llevan su color.
-- **Barra:** en reposo, su color es el del umbral: verde hasta 70%, amarillo de 70% a 90%, rojo desde 90%. Al cambiar el porcentaje se anima en color de la medida y luego vuelve al del umbral. Los bloques vacíos van en gris tenue.
+- **Barra:** en reposo, su color es el del umbral: verde hasta 60%, amarillo de 60% a 80%, rojo por encima de 80%. Al cambiar el porcentaje se anima en color de la medida y luego vuelve al del umbral. Los bloques vacíos van en gris tenue.
 - **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
 - **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Si no cabe en la línea, pasa a una segunda línea debajo de la barra.
 

@@ -3,12 +3,12 @@ import { describe, expect, test } from 'claude-code/testing'
 import { bar, barParts, contextRow, inlineFits, level, longDate, relative, resetText, rowOf, rowsOf, shortDate, withPercent } from './format'
 
 describe('level', () => {
-  test('green up to 70, yellow above 70, red from 90', () => {
+  test('green up to 60, yellow up to 80, red above 80', () => {
     expect(level(0)).toBe('green')
-    expect(level(70)).toBe('green')
-    expect(level(71)).toBe('yellow')
-    expect(level(89)).toBe('yellow')
-    expect(level(90)).toBe('red')
+    expect(level(60)).toBe('green')
+    expect(level(61)).toBe('yellow')
+    expect(level(80)).toBe('yellow')
+    expect(level(81)).toBe('red')
     expect(level(100)).toBe('red')
   })
 })

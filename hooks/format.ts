@@ -28,7 +28,7 @@ const pad2 = (n: number) => String(n).padStart(2, '0')
 
 export const clampPercent = (percent: number) => Math.max(0, Math.min(100, Math.round(percent)))
 
-export const level = (percent: number): Level => (percent >= 90 ? 'red' : percent > 70 ? 'yellow' : 'green')
+export const level = (percent: number): Level => (percent > 80 ? 'red' : percent > 60 ? 'yellow' : 'green')
 
 const filledCells = (percent: number) => Math.round((clampPercent(percent) / 100) * BAR_CELLS)
 
