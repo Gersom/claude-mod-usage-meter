@@ -143,7 +143,9 @@ export const register: Register = on => {
         </Box>
       )
     }
-    const columns = e.props.bodyColumns - 2
+    // The terminal draws a gray border around the band; the desktop draws none.
+    const bordered = e.surface === 'terminal'
+    const columns = e.props.bodyColumns - (bordered ? 4 : 2)
     const slices = slicesOf(current.context?.categories ?? [], Math.max(BAR_MIN, columns))
     const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
     const rows = targets.map(target => {
@@ -156,12 +158,12 @@ export const register: Register = on => {
     // the measures need comes first, then the blank lines between them, and the legend last.
     const toggle = slices.length > 0 ? 1 : 0
     const base = rows.reduce((sum, { row, inline }) => sum + 2 + (!inline && row.reset ? 1 : 0), toggle)
-    const spare = Math.max(0, e.props.maxRows - base)
+    const spare = Math.max(0, e.props.maxRows - (bordered ? 2 : 0) - base)
     const separated = spare >= rows.length - 1
     const legend = legendLines(slices, columns, open ? spare - (separated ? rows.length - 1 : 0) : 0)
 
     return (
-      <Box paddingX={1} flexDirection="column">
+      <Box borderStyle={bordered ? 'round' : undefined} borderColor="gray" paddingX={1} flexDirection="column">
         {rows.map(({ target, row, inline }, index) => {
           const moving = row.percent !== target.percent
           const note = row.reset || row.detail

@@ -15,7 +15,7 @@ Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcenta
 
 ## Diseño
 
-Sin borde, un bloque por medida, separados por una línea en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto` hay un texto `▸ Categorías` que se pulsa para abrir la leyenda (`▾ Categorías`) y se vuelve a pulsar para cerrarla; por defecto está cerrada:
+En la terminal lleva un borde redondeado gris; en la app de escritorio, ninguno (el diagrama es el de la app). Un bloque por medida, separados por una línea en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto` hay un texto `▸ Categorías` que se pulsa para abrir la leyenda (`▾ Categorías`) y se vuelve a pulsar para cerrarla; por defecto está cerrada:
 
 ```
  ◆ Ventana de contexto                                 84k de 200k   42%
