@@ -1,0 +1,12 @@
+{
+  "name": "usage-meter",
+  "owner": { "name": "Gersom" },
+  "metadata": { "description": "Marketplace de un solo plugin: usage-meter." },
+  "plugins": [
+    {
+      "name": "usage-meter",
+      "source": "./",
+      "description": "Recuadro sobre el prompt con el porcentaje de contexto y de los límites de 5 horas y semanal."
+    }
+  ]
+}
