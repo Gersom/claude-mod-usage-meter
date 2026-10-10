@@ -208,12 +208,41 @@ describe('slicesOf', () => {
     expect(slicesOf(tiny, 20).map(slice => slice.cells)).toEqual([1, 19])
   })
 
-  test('free and buffer have their own colors, used ones take the palette in order', () => {
+  test('free and buffer have their own colors, used ones are colored by name', () => {
     const slices = slicesOf(categories, 40)
 
     expect(slices[0].color).toBe('#60a5fa')
-    expect(slices[1].color).toBe('#22d3ee')
+    expect(slices[1].color).toBe('#a78bfa')
     expect(slices[2].color).toBe('#2f3442')
+    expect(slices[3].color).toBe('#4b5263')
+  })
+
+  test('Messages and MCP server instructions have swapped colors', () => {
+    const slices = slicesOf(
+      [
+        { name: 'MCP server instructions', tokens: 700, kind: 'used' },
+        { name: 'Messages', tokens: 147000, kind: 'used' },
+        { name: 'Free space', tokens: 771000, kind: 'free' }
+      ],
+      40
+    )
+
+    expect(slices[0].color).toBe('#fb923c')
+    expect(slices[1].color).toBe('#a78bfa')
+  })
+
+  test('a category the meter does not know takes the next fallback color', () => {
+    const slices = slicesOf(
+      [
+        { name: 'Something new', tokens: 1000, kind: 'used' },
+        { name: 'Another one', tokens: 1000, kind: 'used' },
+        { name: 'Free space', tokens: 8000, kind: 'free' }
+      ],
+      40
+    )
+
+    expect(slices[0].color).toBe('#94a3b8')
+    expect(slices[1].color).toBe('#2dd4bf')
   })
 
   test('nothing to draw without tokens or width', () => {

@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Category, ContextReading, Usage } from '../types'
-import { FREE_COLOR, LEGEND_GAP, inlineFits, legendLines, percentBadge, rowsOf, slicesOf, withPercent } from './format'
+import { FREE_COLOR, LEGEND_GAP, LEGEND_TEXT, inlineFits, legendLines, percentBadge, rowsOf, slicesOf, withPercent } from './format'
 
 const BAR_MIN = 10
 const INDENT = 2
@@ -129,9 +129,8 @@ export const register: Register = on => {
     // the measures need comes first, then the legend, and the blank lines between them last.
     const base = rows.reduce((sum, { row, inline }) => sum + 2 + (!inline && row.reset ? 1 : 0), 0)
     const spare = Math.max(0, e.props.maxRows - 2 - base)
-    const wanted = legendLines(slices, columns, Infinity).lines.length
-    const separated = spare >= wanted + rows.length - 1
-    const legend = legendLines(slices, columns, separated ? wanted : spare)
+    const separated = spare >= rows.length - 1
+    const legend = legendLines(slices, columns, spare - (separated ? rows.length - 1 : 0))
 
     return (
       <Box borderStyle="round" borderColor="gray" paddingX={1} flexDirection="column">
@@ -184,9 +183,11 @@ export const register: Register = on => {
                       {items.map((item, column) => (
                         <Box key={column} marginRight={column < items.length - 1 ? LEGEND_GAP : 0}>
                           <Text color={item.color}>{'■ '}</Text>
-                          <Text>{`${item.name} `}</Text>
-                          <Text bold>{item.tokens}</Text>
-                          <Text dimColor>{` ${item.percent}`}</Text>
+                          <Text color={LEGEND_TEXT}>{`${item.name} `}</Text>
+                          <Text color={LEGEND_TEXT} dimColor>{`${item.percent} `}</Text>
+                          <Text color={LEGEND_TEXT} bold>
+                            {item.tokens}
+                          </Text>
                         </Box>
                       ))}
                       {legend.hidden > 0 && at === legend.lines.length - 1 ? (

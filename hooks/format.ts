@@ -124,7 +124,21 @@ export const tokensText = (context: ContextReading) =>
 
 export type Slice = { name: string; kind: Category['kind']; tokens: number; percent: number; cells: number; color: string }
 
-const PALETTE = ['#60a5fa', '#22d3ee', '#a78bfa', '#4ade80', '#facc15', '#f472b6', '#fb923c', '#94a3b8']
+/** The color of each category the engine names; one it does not know takes the next of PALETTE. */
+const NAME_COLORS: Record<string, string> = {
+  'System prompt': '#60a5fa',
+  'System tools': '#22d3ee',
+  'MCP server instructions': '#fb923c',
+  'Custom agents': '#4ade80',
+  'Memory files': '#facc15',
+  Skills: '#f472b6',
+  Messages: '#a78bfa'
+}
+
+const PALETTE = ['#94a3b8', '#2dd4bf', '#f87171', '#a3e635']
+
+/** The legend's text: darker than the default so the colored markers stand out. */
+export const LEGEND_TEXT = '#9ca3af'
 
 export const FREE_COLOR = '#2f3442'
 export const BUFFER_COLOR = '#4b5263'
@@ -150,7 +164,12 @@ export const slicesOf = (categories: Category[], cells: number): Slice[] => {
     tokens: category.tokens,
     percent: Math.round((category.tokens / total) * 100),
     cells: 0,
-    color: category.kind === 'free' ? FREE_COLOR : category.kind === 'buffer' ? BUFFER_COLOR : PALETTE[next++ % PALETTE.length]
+    color:
+      category.kind === 'free'
+        ? FREE_COLOR
+        : category.kind === 'buffer'
+          ? BUFFER_COLOR
+          : (NAME_COLORS[category.name] ?? PALETTE[next++ % PALETTE.length])
   }))
 
   const exact = slices.map(slice => (slice.tokens / total) * cells)
