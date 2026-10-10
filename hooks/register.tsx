@@ -12,6 +12,7 @@ const EASE = 0.35
 
 const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Record<string, number>)
+const expanded = atom({ plugin: 'usage-meter', key: 'expanded' } as const, false)
 
 /** The context as the meter keeps it; none until the session reports a percent. */
 const contextOf = (
@@ -115,8 +116,9 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Box, Text } = $.ui.resolve(e)
-    const columns = e.props.bodyColumns - 4
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const open = await read($, expanded)
+    const columns = e.props.bodyColumns - 2
     const slices = slicesOf(current.context?.categories ?? [], Math.max(BAR_MIN, columns))
     const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
     const rows = targets.map(target => {
@@ -126,14 +128,15 @@ export const register: Register = on => {
     })
 
     // The band holds `maxRows`, and a taller one scrolls its last rows out of view, so what
-    // the measures need comes first, then the legend, and the blank lines between them last.
-    const base = rows.reduce((sum, { row, inline }) => sum + 2 + (!inline && row.reset ? 1 : 0), 0)
-    const spare = Math.max(0, e.props.maxRows - 2 - base)
+    // the measures need comes first, then the blank lines between them, and the legend last.
+    const toggle = slices.length > 0 ? 1 : 0
+    const base = rows.reduce((sum, { row, inline }) => sum + 2 + (!inline && row.reset ? 1 : 0), toggle)
+    const spare = Math.max(0, e.props.maxRows - base)
     const separated = spare >= rows.length - 1
-    const legend = legendLines(slices, columns, spare - (separated ? rows.length - 1 : 0))
+    const legend = legendLines(slices, columns, open ? spare - (separated ? rows.length - 1 : 0) : 0)
 
     return (
-      <Box borderStyle="round" borderColor="gray" paddingX={1} flexDirection="column">
+      <Box paddingX={1} flexDirection="column">
         {rows.map(({ target, row, inline }, index) => {
           const moving = row.percent !== target.percent
           const note = row.reset || row.detail
@@ -177,17 +180,24 @@ export const register: Register = on => {
                   <Box flexGrow={100 - row.percent} flexShrink={0} backgroundColor={FREE_COLOR} />
                 </Box>
               )}
+              {segmented ? (
+                <Box>
+                  <Button key="categories" plain dimColor onPress={() => void update($, expanded, value => !value)}>
+                    {open ? '▾ Categorías' : '▸ Categorías'}
+                  </Button>
+                </Box>
+              ) : null}
               {segmented
                 ? legend.lines.map((items, at) => (
                     <Box key={at}>
                       {items.map((item, column) => (
                         <Box key={column} marginRight={column < items.length - 1 ? LEGEND_GAP : 0}>
                           <Text color={item.color}>{'■ '}</Text>
-                          <Text color={LEGEND_TEXT}>{`${item.name} `}</Text>
-                          <Text color={LEGEND_TEXT} dimColor>{`${item.percent} `}</Text>
+                          <Text color={LEGEND_TEXT}>{`${item.name} (${item.percent} ≈ `}</Text>
                           <Text color={LEGEND_TEXT} bold>
                             {item.tokens}
                           </Text>
+                          <Text color={LEGEND_TEXT}>{')'}</Text>
                         </Box>
                       ))}
                       {legend.hidden > 0 && at === legend.lines.length - 1 ? (

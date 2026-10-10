@@ -10,6 +10,8 @@ declare module 'claude-code' {
       usage: Usage | null
       /** Percent each row is showing now, by row key; it steps toward the reading during an animation. */
       shown: Record<string, number>
+      /** Whether the category legend under Contexto is open; closed until the person opens it. */
+      expanded: boolean
     }
   }
 }

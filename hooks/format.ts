@@ -194,7 +194,8 @@ export type LegendItem = { color: string; name: string; tokens: string; percent:
 
 export const LEGEND_GAP = 2
 
-const itemWidth = (item: LegendItem) => 2 + item.name.length + 1 + item.tokens.length + 1 + item.percent.length
+/** `■ name (12% ≈ 3.4k)`. */
+const itemWidth = (item: LegendItem) => 2 + item.name.length + 2 + item.percent.length + 3 + item.tokens.length + 1
 
 const lineWidth = (line: LegendItem[]) =>
   line.reduce((sum, item, index) => sum + itemWidth(item) + (index > 0 ? LEGEND_GAP : 0), 0)

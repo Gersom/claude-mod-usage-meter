@@ -76,9 +76,18 @@ test('draws the context by category', async ($, on) => {
 
   const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
 
+  expect(await ui.find({ type: 'Button', key: 'categories' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeUndefined()
+
+  await ui.press({ key: 'categories' })
+
   expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Messages/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Libre/ })).toBeDefined()
+
+  await ui.press({ key: 'categories' })
+
+  expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeUndefined()
   await ui.unmount()
 })
 
