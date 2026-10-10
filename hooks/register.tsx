@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Category, ContextReading, Usage } from '../types'
-import { FREE_COLOR, barParts, inlineFits, legendRows, percentBadge, rowsOf, slicesOf, withPercent } from './format'
+import { FREE_COLOR, LEGEND_GAP, inlineFits, legendLines, percentBadge, rowsOf, slicesOf, withPercent } from './format'
 
 const BAR_MIN = 10
 const INDENT = 2
@@ -117,22 +117,31 @@ export const register: Register = on => {
 
     const { Box, Text } = $.ui.resolve(e)
     const columns = e.props.bodyColumns - 4
-    const width = Math.max(BAR_MIN, columns)
-    const slices = slicesOf(current.context?.categories ?? [], width)
-    const legend = legendRows(slices, columns)
+    const slices = slicesOf(current.context?.categories ?? [], Math.max(BAR_MIN, columns))
+    const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
+    const rows = targets.map(target => {
+      const row = withPercent(target, values[target.key] ?? target.percent)
+
+      return { target, row, inline: inlineFits(row, columns) }
+    })
+
+    // The band holds `maxRows`, and a taller one scrolls its last rows out of view, so what
+    // the measures need comes first, then the legend, and the blank lines between them last.
+    const base = rows.reduce((sum, { row, inline }) => sum + 2 + (!inline && row.reset ? 1 : 0), 0)
+    const spare = Math.max(0, e.props.maxRows - 2 - base)
+    const wanted = legendLines(slices, columns, Infinity).lines.length
+    const separated = spare >= wanted + rows.length - 1
+    const legend = legendLines(slices, columns, separated ? wanted : spare)
 
     return (
       <Box borderStyle="round" borderColor="gray" paddingX={1} flexDirection="column">
-        {targets.map((target, index) => {
-          const row = withPercent(target, values[target.key] ?? target.percent)
+        {rows.map(({ target, row, inline }, index) => {
           const moving = row.percent !== target.percent
-          const parts = barParts(row.percent, width)
-          const inline = inlineFits(row, columns)
           const note = row.reset || row.detail
           const segmented = row.key === 'context' && slices.length > 0
 
           return (
-            <Box key={row.key} flexDirection="column" marginTop={index > 0 ? 1 : 0}>
+            <Box key={row.key} flexDirection="column" marginTop={index > 0 && separated ? 1 : 0}>
               <Box justifyContent="space-between">
                 <Box>
                   <Text color={row.accent}>{'◆ '}</Text>
@@ -150,31 +159,39 @@ export const register: Register = on => {
                   <Text dimColor>{`${' '.repeat(INDENT)}${row.reset}`}</Text>
                 </Box>
               ) : null}
+              {/* The bars are Boxes that share the line by flex, so they fill it however wide it really is. */}
               {segmented ? (
-                <Box>
+                <Box height={1}>
                   {slices.map((slice, at) => (
-                    <Text key={at} color={slice.color}>
-                      {'█'.repeat(slice.cells)}
-                    </Text>
+                    <Box
+                      key={at}
+                      flexGrow={Math.round((slice.tokens / total) * 1000)}
+                      flexShrink={0}
+                      minWidth={slice.kind === 'used' && slice.tokens > 0 ? 1 : 0}
+                      backgroundColor={slice.color}
+                    />
                   ))}
                 </Box>
               ) : (
-                <Box>
-                  <Text color={moving ? row.accent : row.level}>{parts.filled}</Text>
-                  <Text color={FREE_COLOR}>{'█'.repeat(parts.empty.length)}</Text>
+                <Box height={1}>
+                  <Box flexGrow={row.percent} flexShrink={0} backgroundColor={moving ? row.accent : row.level} />
+                  <Box flexGrow={100 - row.percent} flexShrink={0} backgroundColor={FREE_COLOR} />
                 </Box>
               )}
               {segmented
-                ? legend.map((items, at) => (
+                ? legend.lines.map((items, at) => (
                     <Box key={at}>
                       {items.map((item, column) => (
-                        <Box key={column} marginRight={column < items.length - 1 ? GAP : 0}>
+                        <Box key={column} marginRight={column < items.length - 1 ? LEGEND_GAP : 0}>
                           <Text color={item.color}>{'■ '}</Text>
-                          <Text>{item.name}</Text>
-                          <Text bold>{` ${item.tokens}`}</Text>
+                          <Text>{`${item.name} `}</Text>
+                          <Text bold>{item.tokens}</Text>
                           <Text dimColor>{` ${item.percent}`}</Text>
                         </Box>
                       ))}
+                      {legend.hidden > 0 && at === legend.lines.length - 1 ? (
+                        <Text dimColor>{`${' '.repeat(LEGEND_GAP)}+${legend.hidden} más`}</Text>
+                      ) : null}
                     </Box>
                   ))
                 : null}

@@ -6,7 +6,7 @@ import {
   compactTokens,
   contextRow,
   inlineFits,
-  legendRows,
+  legendLines,
   level,
   longDate,
   percentBadge,
@@ -222,7 +222,7 @@ describe('slicesOf', () => {
   })
 })
 
-describe('legendRows', () => {
+describe('legendLines', () => {
   const slices = slicesOf(
     [
       { name: 'System prompt', tokens: 4000, kind: 'used' },
@@ -232,26 +232,44 @@ describe('legendRows', () => {
     ],
     40
   )
+  // Widths: `■ System prompt 4k 2%` 21, `■ Messages 36k 18%` 18, `■ Libre 140k 70%` 16, `■ Búfer 20k 10%` 15; 2 apart.
+  const sizes = (lines: { length: number }[]) => lines.map(line => line.length)
 
-  test('lines the columns up by padding each field to the widest', () => {
-    const [row] = legendRows(slices, 200)
+  test('each item carries its name, tokens and percent as they are, unpadded', () => {
+    const { lines } = legendLines(slices, 200, Infinity)
 
-    expect(row.map(item => item.name)).toEqual(['System prompt', 'Messages     ', 'Libre        ', 'Búfer        '])
-    expect(row.map(item => item.tokens)).toEqual(['  4k', ' 36k', '140k', ' 20k'])
-    expect(row.map(item => item.percent)).toEqual([' 2%', '18%', '70%', '10%'])
+    expect(lines[0].map(item => item.name)).toEqual(['System prompt', 'Messages', 'Libre', 'Búfer'])
+    expect(lines[0].map(item => item.tokens)).toEqual(['4k', '36k', '140k', '20k'])
+    expect(lines[0].map(item => item.percent)).toEqual(['2%', '18%', '70%', '10%'])
   })
 
-  test('wraps into rows when the columns do not fit them all', () => {
-    // item: 2 + 13 + 1 + 4 + 1 + 3 = 24 wide, 3 apart
-    expect(legendRows(slices, 200)).toHaveLength(1)
-    expect(legendRows(slices, 80).map(row => row.length)).toEqual([3, 1])
-    expect(legendRows(slices, 51).map(row => row.length)).toEqual([2, 2])
-    expect(legendRows(slices, 50).map(row => row.length)).toEqual([1, 1, 1, 1])
-    expect(legendRows(slices, 10).map(row => row.length)).toEqual([1, 1, 1, 1])
+  test('flows into lines as the width allows', () => {
+    expect(sizes(legendLines(slices, 200, Infinity).lines)).toEqual([4])
+    expect(sizes(legendLines(slices, 60, Infinity).lines)).toEqual([3, 1])
+    expect(sizes(legendLines(slices, 41, Infinity).lines)).toEqual([2, 2])
+    expect(sizes(legendLines(slices, 10, Infinity).lines)).toEqual([1, 1, 1, 1])
+  })
+
+  test('keeps to the lines it is given and counts what it left out', () => {
+    expect(legendLines(slices, 41, 2)).toMatchObject({ hidden: 0 })
+
+    const cut = legendLines(slices, 41, 1)
+
+    expect(sizes(cut.lines)).toEqual([1])
+    expect(cut.hidden).toBe(3)
+    expect(legendLines(slices, 41, 0)).toEqual({ lines: [], hidden: 4 })
+  })
+
+  test('leaves room on the last line for the note on what is hidden', () => {
+    // 21 + 2 + 18 = 41 would fill the line; the ` +2 más` note needs 7 more.
+    const cut = legendLines(slices, 45, 1)
+
+    expect(sizes(cut.lines)).toEqual([1])
+    expect(cut.hidden).toBe(3)
   })
 
   test('nothing to list without slices', () => {
-    expect(legendRows([], 80)).toEqual([])
+    expect(legendLines([], 80, Infinity)).toEqual({ lines: [], hidden: 0 })
   })
 })
 

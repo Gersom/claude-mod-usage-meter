@@ -173,33 +173,48 @@ export const slicesOf = (categories: Category[], cells: number): Slice[] => {
 
 export type LegendItem = { color: string; name: string; tokens: string; percent: string }
 
-const LEGEND_GAP = 3
+export const LEGEND_GAP = 2
+
+const itemWidth = (item: LegendItem) => 2 + item.name.length + 1 + item.tokens.length + 1 + item.percent.length
+
+const lineWidth = (line: LegendItem[]) =>
+  line.reduce((sum, item, index) => sum + itemWidth(item) + (index > 0 ? LEGEND_GAP : 0), 0)
 
 /**
- * The legend laid out in columns that fit `columns`, row by row, with each item's name,
- * tokens and percent padded so the columns line up.
+ * The legend as lines of `■ name tokens %` items flowing to fit `columns`, at most `maxLines` of them.
+ * When some do not fit, `hidden` counts the items left out, and the last line leaves room for a note on them.
  */
-export const legendRows = (slices: Slice[], columns: number): LegendItem[][] => {
-  if (slices.length === 0) return []
-
-  const tokens = slices.map(slice => compactTokens(slice.tokens))
-  const percents = slices.map(slice => `${slice.percent}%`)
-  const nameWidth = Math.max(...slices.map(slice => slice.name.length))
-  const tokensWidth = Math.max(...tokens.map(text => text.length))
-  const percentWidth = Math.max(...percents.map(text => text.length))
-  const itemWidth = 2 + nameWidth + 1 + tokensWidth + 1 + percentWidth
-  const perRow = Math.max(1, Math.floor((columns + LEGEND_GAP) / (itemWidth + LEGEND_GAP)))
-  const items = slices.map((slice, index) => ({
+export const legendLines = (slices: Slice[], columns: number, maxLines: number) => {
+  const items: LegendItem[] = slices.map(slice => ({
     color: slice.color,
-    name: slice.name.padEnd(nameWidth),
-    tokens: tokens[index].padStart(tokensWidth),
-    percent: percents[index].padStart(percentWidth)
+    name: slice.name,
+    tokens: compactTokens(slice.tokens),
+    percent: `${slice.percent}%`
   }))
-  const rows: LegendItem[][] = []
+  const lines: LegendItem[][] = []
 
-  for (let start = 0; start < items.length; start += perRow) rows.push(items.slice(start, start + perRow))
+  for (const item of items) {
+    const line = lines[lines.length - 1]
 
-  return rows
+    if (line && lineWidth(line) + LEGEND_GAP + itemWidth(item) <= columns) line.push(item)
+    else lines.push([item])
+  }
+
+  if (lines.length <= maxLines) return { lines, hidden: 0 }
+
+  const kept = lines.slice(0, Math.max(0, maxLines))
+
+  if (kept.length === 0) return { lines: kept, hidden: items.length }
+
+  const last = kept[kept.length - 1]
+  let hidden = items.length - kept.reduce((sum, line) => sum + line.length, 0)
+
+  while (last.length > 1 && lineWidth(last) + LEGEND_GAP + ` +${hidden} más`.length > columns) {
+    last.pop()
+    hidden++
+  }
+
+  return { lines: kept, hidden }
 }
 
 export const contextRow = (context: ContextReading): Row => {

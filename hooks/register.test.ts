@@ -82,6 +82,46 @@ test('draws the context by category', async ($, on) => {
   await ui.unmount()
 })
 
+test('keeps the plan windows in view when the band has little room', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  on('session.usage', () => ({
+    value: {
+      startedAt: 0,
+      context: {
+        ...window,
+        breakdown: {
+          categories: [
+            { name: 'System prompt', tokens: 4000, color: 'a', isDeferred: false, kind: 'used' },
+            { name: 'Messages', tokens: 80000, color: 'b', isDeferred: false, kind: 'used' },
+            { name: 'Free space', tokens: 116000, color: 'c', isDeferred: false, kind: 'free' }
+          ]
+        }
+      },
+      rateLimits: [],
+      cost: { usd: 0 }
+    }
+  }) as never)
+  mock.clock(on, { now: Date.now() })
+
+  await $.session.measure({
+    context: window,
+    rateLimits: [
+      { kind: 'five_hour', percentUsed: 23 },
+      { kind: 'seven_day', percentUsed: 7 }
+    ],
+    changed: ['context', 'rateLimits']
+  })
+
+  const tight = { ...BAND, props: { hasSurvey: false, isWorking: false, maxRows: 8, bodyColumns: 80 } as never }
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...tight })
+
+  expect(await ui.find({ type: 'Text', text: /5 horas/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Semana/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeUndefined()
+  await ui.unmount()
+})
+
 test('draws the context without categories when the session gives none', async ($, on) => {
   on('ui.render', () => engineBand)
   on('session.measure', ($, e) => ({ changed: e.changed }))
