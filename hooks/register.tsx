@@ -1,9 +1,10 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { ContextReading, Usage } from '../types'
-import { barParts, inlineFits, rowsOf, withPercent } from './format'
+import type { Category, ContextReading, Usage } from '../types'
+import { barParts, compactTokens, inlineFits, rowsOf, slicesOf, withPercent } from './format'
 
+const BAR_MIN = 10
 const LABEL_WIDTH = 9
 const BAR_WIDTH = 11
 const PERCENT_WIDTH = 5
@@ -15,8 +16,24 @@ const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Record<string, number>)
 
 /** The context as the meter keeps it; none until the session reports a percent. */
-const contextOf = (context: { percent?: number; tokens?: number; window: number }): ContextReading | null =>
-  context.percent === undefined ? null : { percent: context.percent, tokens: context.tokens ?? null, window: context.window }
+const contextOf = (
+  context: { percent?: number; tokens?: number; window: number },
+  categories: Category[]
+): ContextReading | null =>
+  context.percent === undefined
+    ? null
+    : { percent: context.percent, tokens: context.tokens ?? null, window: context.window, categories }
+
+/** The window by category, estimated locally; none when the session has no breakdown to give. */
+const categoriesOf = async ($: EngineInterface): Promise<Category[]> => {
+  try {
+    const { context } = await $.session.usage({ breakdown: 'summary' })
+
+    return (context.breakdown?.categories ?? []).map(({ name, tokens, kind }) => ({ name, tokens, kind }))
+  } catch {
+    return []
+  }
+}
 
 /** The running glide of each row, by key: the percent it moves toward and the timer that moves it. */
 const glides = new Map<string, { target: number; timer: { cancel: () => void } }>()
@@ -65,7 +82,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     try {
       const now = await $.session.usage()
-      const reading: Usage = { context: contextOf(now.context), limits: now.rateLimits }
+      const reading: Usage = { context: contextOf(now.context, await categoriesOf($)), limits: now.rateLimits }
 
       await update($, usage, () => reading)
       await sync($, reading)
@@ -77,7 +94,7 @@ export const register: Register = on => {
   })
 
   on('session.measure', async ($, e, next) => {
-    const next_: Usage = { context: contextOf(e.context), limits: e.rateLimits }
+    const next_: Usage = { context: contextOf(e.context, await categoriesOf($)), limits: e.rateLimits }
 
     await update($, usage, () => next_)
     await sync($, next_)
@@ -102,6 +119,7 @@ export const register: Register = on => {
 
     const { Box, Text } = $.ui.resolve(e)
     const columns = e.props.bodyColumns - 4
+    const slices = slicesOf(current.context?.categories ?? [], Math.max(BAR_MIN, columns))
 
     return (
       <Box borderStyle="round" borderColor="gray" paddingX={1} flexDirection="column">
@@ -131,6 +149,27 @@ export const register: Register = on => {
               {!inline && row.reset ? (
                 <Box>
                   <Text dimColor>{`${' '.repeat(LABEL_WIDTH)}${row.reset}`}</Text>
+                </Box>
+              ) : null}
+              {row.key === 'context' && slices.length > 0 ? (
+                <Box flexDirection="column">
+                  <Box>
+                    {slices.map((slice, index) => (
+                      <Text key={index} color={slice.color}>
+                        {'█'.repeat(slice.cells)}
+                      </Text>
+                    ))}
+                  </Box>
+                  <Box flexWrap="wrap">
+                    {slices.map((slice, index) => (
+                      <Box key={index} marginRight={2}>
+                        <Text color={slice.color}>{'■ '}</Text>
+                        <Text>{`${slice.name} `}</Text>
+                        <Text bold>{compactTokens(slice.tokens)}</Text>
+                        <Text dimColor>{` ${slice.percent}%`}</Text>
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
               ) : null}
             </Box>

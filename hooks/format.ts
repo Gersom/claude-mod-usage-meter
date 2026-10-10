@@ -1,4 +1,4 @@
-import type { ContextReading, Usage, UsageLimit } from '../types'
+import type { Category, ContextReading, Usage, UsageLimit } from '../types'
 
 export type Level = 'green' | 'yellow' | 'red'
 
@@ -118,6 +118,55 @@ export const compactTokens = (tokens: number) => {
 /** `90k de 1M`; empty when the reading has no token count. */
 export const tokensText = (context: ContextReading) =>
   context.tokens === null ? '' : `${compactTokens(context.tokens)} de ${compactTokens(context.window)}`
+
+export type Slice = { name: string; kind: Category['kind']; tokens: number; percent: number; cells: number; color: string }
+
+const PALETTE = ['#60a5fa', '#22d3ee', '#a78bfa', '#4ade80', '#facc15', '#f472b6', '#fb923c', '#94a3b8']
+
+export const FREE_COLOR = '#2f3442'
+export const BUFFER_COLOR = '#4b5263'
+
+const sliceName = (category: Category) =>
+  category.kind === 'free' ? 'Libre' : category.kind === 'buffer' ? 'Búfer' : category.name
+
+/**
+ * The categories that sit in the window, each with the cells it takes of a bar `cells` wide
+ * (a used category with tokens always gets at least one) and its share of the window.
+ */
+export const slicesOf = (categories: Category[], cells: number): Slice[] => {
+  const shown = categories.filter(category => category.kind !== 'deferred')
+  const total = shown.reduce((sum, category) => sum + Math.max(0, category.tokens), 0)
+
+  if (total <= 0 || cells <= 0) return []
+
+  let next = 0
+
+  const slices: Slice[] = shown.map(category => ({
+    name: sliceName(category),
+    kind: category.kind,
+    tokens: category.tokens,
+    percent: Math.round((category.tokens / total) * 100),
+    cells: 0,
+    color: category.kind === 'free' ? FREE_COLOR : category.kind === 'buffer' ? BUFFER_COLOR : PALETTE[next++ % PALETTE.length]
+  }))
+
+  const exact = slices.map(slice => (slice.tokens / total) * cells)
+
+  slices.forEach((slice, index) => {
+    slice.cells = Math.floor(exact[index])
+
+    if (slice.kind === 'used' && slice.tokens > 0 && slice.cells === 0) slice.cells = 1
+  })
+
+  let diff = cells - slices.reduce((sum, slice) => sum + slice.cells, 0)
+  const byRemainder = slices.map((_, index) => index).sort((a, b) => (exact[b] % 1) - (exact[a] % 1))
+
+  for (let step = 0; diff > 0; step++, diff--) slices[byRemainder[step % byRemainder.length]].cells++
+
+  for (; diff < 0; diff++) slices.reduce((widest, slice) => (slice.cells > widest.cells ? slice : widest)).cells--
+
+  return slices
+}
 
 export const contextRow = (context: ContextReading): Row => {
   const p = clampPercent(context.percent)

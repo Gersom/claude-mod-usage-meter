@@ -50,6 +50,55 @@ test('draws context and both plan windows as percentages', async ($, on) => {
   }
 })
 
+test('draws the context by category', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  on('session.usage', () => ({
+    value: {
+      startedAt: 0,
+      context: {
+        ...window,
+        breakdown: {
+          categories: [
+            { name: 'System prompt', tokens: 4000, color: 'a', isDeferred: false, kind: 'used' },
+            { name: 'Messages', tokens: 80000, color: 'b', isDeferred: false, kind: 'used' },
+            { name: 'Free space', tokens: 116000, color: 'c', isDeferred: false, kind: 'free' }
+          ]
+        }
+      },
+      rateLimits: [],
+      cost: { usd: 0 }
+    }
+  }) as never)
+  mock.clock(on, { now: Date.now() })
+
+  await $.session.measure({ context: window, rateLimits: [], changed: ['context'] })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Messages/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Libre/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('draws the context without categories when the session gives none', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  on('session.usage', () => {
+    throw new Error('no breakdown')
+  })
+  mock.clock(on, { now: Date.now() })
+
+  await $.session.measure({ context: window, rateLimits: [], changed: ['context'] })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Libre/ })).toBeUndefined()
+  await ui.unmount()
+})
+
 test('yields to a survey', async ($, on) => {
   on('ui.render', () => engineBand)
   on('session.measure', ($, e) => ({ changed: e.changed }))

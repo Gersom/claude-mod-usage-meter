@@ -13,11 +13,17 @@ import {
   rowOf,
   rowsOf,
   shortDate,
+  slicesOf,
   tokensText,
   withPercent
 } from './format'
 
-const reading = (percent: number, tokens: number | null = null, window = 200000) => ({ percent, tokens, window })
+const reading = (percent: number, tokens: number | null = null, window = 200000) => ({
+  percent,
+  tokens,
+  window,
+  categories: []
+})
 
 describe('level', () => {
   test('green up to 60, yellow up to 80, red above 80', () => {
@@ -153,6 +159,50 @@ describe('tokensText', () => {
 
   test('no token count gives no text', () => {
     expect(tokensText(reading(9))).toBe('')
+  })
+})
+
+describe('slicesOf', () => {
+  const categories = [
+    { name: 'System prompt', tokens: 4000, kind: 'used' as const },
+    { name: 'Messages', tokens: 36000, kind: 'used' as const },
+    { name: 'Free space', tokens: 140000, kind: 'free' as const },
+    { name: 'Autocompact buffer', tokens: 20000, kind: 'buffer' as const },
+    { name: 'MCP tools (deferred)', tokens: 9000, kind: 'deferred' as const }
+  ]
+
+  test('fills the bar exactly, leaving out what is deferred', () => {
+    const slices = slicesOf(categories, 40)
+
+    expect(slices.map(slice => slice.name)).toEqual(['System prompt', 'Messages', 'Libre', 'Búfer'])
+    expect(slices.reduce((sum, slice) => sum + slice.cells, 0)).toBe(40)
+    expect(slices.map(slice => slice.cells)).toEqual([1, 7, 28, 4])
+  })
+
+  test('shares are of what sits in the window', () => {
+    expect(slicesOf(categories, 40).map(slice => slice.percent)).toEqual([2, 18, 70, 10])
+  })
+
+  test('a used category with tokens keeps at least one cell', () => {
+    const tiny = [
+      { name: 'Skills', tokens: 10, kind: 'used' as const },
+      { name: 'Free space', tokens: 100000, kind: 'free' as const }
+    ]
+
+    expect(slicesOf(tiny, 20).map(slice => slice.cells)).toEqual([1, 19])
+  })
+
+  test('free and buffer have their own colors, used ones take the palette in order', () => {
+    const slices = slicesOf(categories, 40)
+
+    expect(slices[0].color).toBe('#60a5fa')
+    expect(slices[1].color).toBe('#22d3ee')
+    expect(slices[2].color).toBe('#2f3442')
+  })
+
+  test('nothing to draw without tokens or width', () => {
+    expect(slicesOf([], 40)).toEqual([])
+    expect(slicesOf(categories, 0)).toEqual([])
   })
 })
 
