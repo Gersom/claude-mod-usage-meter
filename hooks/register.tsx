@@ -149,7 +149,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    // What other hooks draw in the band (cache-watch's) stays; the meter goes above it.
+    // What other hooks draw in the band (cache-watch's) stays; the meter goes under it.
     const below = await next(e)
     const current = await read($, usage)
 
@@ -243,7 +243,7 @@ export const register: Register = on => {
     )
 
     const stacked = (meter: RenderElement) =>
-      isEmpty(below) ? meter : <Box flexDirection="column">{meter}{below}</Box>
+      isEmpty(below) ? meter : <Box flexDirection="column">{below}{meter}</Box>
 
     if (view === 'line') {
       return stacked(
