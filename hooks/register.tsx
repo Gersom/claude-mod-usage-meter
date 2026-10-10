@@ -183,9 +183,8 @@ export const register: Register = on => {
         </Box>
       )
     }
-    // The terminal draws a gray border around the band; the desktop draws none.
-    const bordered = e.surface === 'terminal'
-    const columns = e.props.bodyColumns - (bordered ? 4 : 2)
+    // The band wears a dark gray border on every surface, which takes two columns on each side.
+    const columns = e.props.bodyColumns - 4
     const slices = slicesOf(current.context?.categories ?? [], t)
     const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
     const rows = targets.map(target => {
@@ -203,10 +202,10 @@ export const register: Register = on => {
       (sum, { row, inline }) => sum + (detailed ? 2 : 1) + (!inline && row.reset ? 1 : 0),
       toggle + 1
     )
-    const separated = detailed && e.props.maxRows - (bordered ? 2 : 0) - base >= rows.length - 1
+    const separated = detailed && e.props.maxRows - 2 - base >= rows.length - 1
     const legend = open ? legendLines(slices, columns) : []
 
-    const frame = bordered ? { borderStyle: 'round' as const, borderColor: BORDER_COLOR } : {}
+    const frame = { borderStyle: 'round' as const, borderColor: BORDER_COLOR }
 
     // Each button toggles its own view and, pressed again, goes back to the full one.
     const controls = (
