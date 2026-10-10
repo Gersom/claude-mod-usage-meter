@@ -87,26 +87,52 @@ El mod no consume tokens del modelo ni agrega nada al contexto:
 
 - Si el "uso del plan" es algo distinto a las ventanas de 5 horas y semanal. La API solo expone esas dos (y un `spend_limit` en gateways), así que por ahora el mod las toma como "uso del plan".
 
+## Instalación
+
+Requiere Claude Code 2.1.287 o superior. Se instala en un paso (Claude Code 2.1.275 o superior):
+
+```
+/plugin install usage-meter --marketplace Gersom/claude-mod-usage-meter
+```
+
+O en dos pasos:
+
+```
+/plugin marketplace add Gersom/claude-mod-usage-meter
+/plugin install usage-meter@usage-meter
+```
+
+También forma parte de la colección [`gersom-claude-mods`](https://github.com/Gersom/gersom-claude-mods): `/plugin marketplace add Gersom/gersom-claude-mods` y luego `/plugin install usage-meter@gersom-claude-mods`.
+
+Este mod corre con tus permisos, como cualquier plugin; `claude plugin validate` lista los hooks y las llamadas que hace antes de instalarlo.
+
 ## Uso
 
-Cargar el mod en una sesión de Claude Code (terminal):
+Para desarrollar, cargar el mod desde la carpeta del repo en una sesión de Claude Code (terminal):
 
 ```bash
-claude --plugin-dir mods/usage-meter
+claude --plugin-dir .
 ```
 
 Probar y validar:
 
 ```bash
-claude plugin validate mods/usage-meter
-claude plugin test mods/usage-meter
+claude plugin validate .
+claude plugin test .
 ```
+
+## Licencia y apoyo
+
+[MIT](./LICENSE) © Gersom. Si te sirve, puedes apoyar el proyecto con una donación por [PayPal](https://paypal.me/gersomalaja).
 
 ## Estructura
 
 ```
 usage-meter/
-├── .claude-plugin/plugin.json   # manifiesto
+├── LICENSE                      # licencia MIT
+├── .claude-plugin/
+│   ├── plugin.json              # manifiesto del plugin
+│   └── marketplace.json         # marketplace de un solo plugin (instalación suelta)
 ├── hooks/
 │   ├── hooks.json               # apunta a register.tsx
 │   ├── register.tsx             # hooks: session.start, session.measure, ui.render
