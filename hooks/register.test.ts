@@ -8,10 +8,14 @@ const BAND = {
 
 const engineBand = { type: 'Box' as const, props: {}, children: [] }
 
+// The person's settings say Spanish: the panel is drawn in it.
+const spanish = () => ({ value: { language: 'Español' } }) as never
+
 const window = { window: 200000, tokens: 84000, percent: 42 }
 
 test('draws nothing until there is a reading', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   mock.clock(on, { now: Date.now() })
 
@@ -23,6 +27,7 @@ test('draws nothing until there is a reading', async ($, on) => {
 
 test('draws context and both plan windows as percentages', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   mock.clock(on, { now: Date.now() })
 
@@ -53,6 +58,7 @@ test('draws context and both plan windows as percentages', async ($, on) => {
 
 test('draws the context by category', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   on('session.usage', () => ({
     value: {
@@ -94,6 +100,7 @@ test('draws the context by category', async ($, on) => {
 
 test('folds to one line per measure and unfolds again', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   on('session.usage', () => ({
     value: {
@@ -142,6 +149,7 @@ test('folds to one line per measure and unfolds again', async ($, on) => {
 
 test('puts everything on a single line and unfolds again', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   mock.clock(on, { now: Date.now() })
 
@@ -178,6 +186,7 @@ test('puts everything on a single line and unfolds again', async ($, on) => {
 
 test('keeps the plan windows in view when the band has little room', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   on('session.usage', () => ({
     value: {
@@ -218,6 +227,7 @@ test('keeps the plan windows in view when the band has little room', async ($, o
 
 test('draws the context without categories when the session gives none', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   on('session.usage', () => {
     throw new Error('no breakdown')
@@ -233,8 +243,75 @@ test('draws the context without categories when the session gives none', async (
   await ui.unmount()
 })
 
+test('speaks English when the settings name no language, or one the panel does not have', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  mock.clock(on, { now: Date.now() })
+
+  // No settings.read hook answers: nothing says a language.
+  await $.session.measure({
+    context: window,
+    rateLimits: [{ kind: 'seven_day', percentUsed: 7 }],
+    changed: ['context', 'rateLimits']
+  })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Weekly limit/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', key: 'compact', text: /Compact/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'lang', text: /EN/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('speaks the language settings.language names, in any spelling', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  on('settings.read', () => ({ value: { language: 'english' } }) as never)
+  mock.clock(on, { now: Date.now() })
+
+  await $.session.measure({ context: window, rateLimits: [], changed: ['context'] })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('switches the language by hand and back', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('settings.read', spanish)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  mock.clock(on, { now: Date.now() })
+
+  await $.session.measure({ context: window, rateLimits: [], changed: ['context'] })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'lang', text: /ES/ })).toBeDefined()
+
+  await ui.press({ key: 'lang' })
+
+  expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', key: 'lang', text: /EN/ })).toBeDefined()
+
+  // A new reading does not take the choice back to what the settings say.
+  await $.session.measure({ context: window, rateLimits: [], changed: ['context'] })
+
+  expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeDefined()
+
+  await ui.press({ key: 'lang' })
+
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
+  await ui.unmount()
+})
+
 test('yields to a survey', async ($, on) => {
   on('ui.render', () => engineBand)
+  on('settings.read', spanish)
   on('session.measure', ($, e) => ({ changed: e.changed }))
   mock.clock(on, { now: Date.now() })
 

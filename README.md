@@ -49,11 +49,25 @@ Con las categorías abiertas, bajo `▾ Categorías`:
 - **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
 - **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Va a la derecha de la cabecera; si no cabe, pasa a una segunda línea debajo de ella.
 
+## Idioma
+
+El panel habla español o inglés. Lo decide el propio mod, con diccionarios fijos en `hooks/i18n.ts`: ningún agente ni subagente traduce nada, no hay llamadas a modelos y no consume tokens.
+
+- **Automático:** al empezar la sesión (y, si hiciera falta, en la primera medición) lee `settings.language` de la configuración de Claude Code (`$.settings.read()`, ya fusionada: usuario, proyecto, política…). Es texto libre, así que reconoce el español en varias formas (`Español`, `spanish`, `es`, `es-MX`, `castellano`, sin importar mayúsculas ni tildes).
+- **Por defecto, inglés:** si no hay `settings.language`, no se puede leer o nombra un idioma que el panel no tiene (`japanese`, `french`…), el panel va en inglés.
+- **A mano:** el botón `[ES]` / `[EN]`, al pie junto a los otros, cambia el idioma. Una medición nueva no lo revierte; se pierde al reiniciar la sesión, que vuelve al automático.
+- **Qué cambia:** títulos (`Ventana de contexto` / `Context window`, `Límite de 5 horas` / `5-hour limit`, `Límite semanal` / `Weekly limit`), `Restablece en` / `Resets in`, `hoy` / `today`, días y fechas (`lun 09 de oct` / `Mon, Oct 09`), `de` / `of`, `Libre` / `Free`, `Búfer` / `Buffer`, `Categorías` / `Categories` y los botones.
+- **Qué no cambia:** los nombres de las categorías (`System prompt`, `Messages`…) los entrega el motor en inglés y se muestran tal cual en ambos idiomas. Las unidades compactas (`1h 52m`, `3d 20h`) son iguales en los dos.
+- **Agregar otro idioma:** un diccionario más en `TEXTS` (`hooks/i18n.ts`), su código en `Lang` (`types/index.d.ts`) y cómo se reconoce en `detectLang`.
+
+Los diagramas de este README están en español.
+
 ## Tipo y fuente de datos
 
 - **Tipo:** hook (plugin de Claude Code).
 - **Evento:** `session.measure`, que entrega el contexto (`context.percent`, `context.tokens` y `context.window`) y las ventanas de límite (`rateLimits`, con `five_hour` y `seven_day` y su `percentUsed`).
 - **Categorías:** `$.session.usage({ breakdown: 'summary' })`, que `session.measure` no trae; se pide al empezar la sesión y en cada medición.
+- **Idioma:** `$.settings.read()`, clave `language`; se lee una vez por sesión.
 - **Dibujo:** hook `ui.render` sobre `AbovePrompt` (franja sobre el prompt).
 
 ## Fuera de alcance
@@ -88,9 +102,10 @@ usage-meter/
 ├── hooks/
 │   ├── hooks.json               # apunta a register.tsx
 │   ├── register.tsx             # hooks: session.start, session.measure, ui.render
+│   ├── i18n.ts                  # textos en español e inglés y detección del idioma
 │   ├── format.ts                # lógica pura: color, fechas, filas, categorías, leyenda, ajuste al ancho
 │   └── *.test.ts                # tests (lógica y render)
-└── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila), expanded (leyenda abierta) y view (vista: completa, compacta o una línea)
+└── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila), expanded (leyenda abierta) view (vista: completa, compacta o una línea) y lang (idioma)
 ```
 
 ## Limitaciones conocidas

@@ -3,6 +3,7 @@ export type UsageLimit = { kind: string; percentUsed: number; resetsAt?: string 
 export type Category = { name: string; tokens: number; kind: 'used' | 'free' | 'buffer' | 'deferred' }
 export type ContextReading = { percent: number; tokens: number | null; window: number; categories: Category[] }
 export type View = 'full' | 'compact' | 'line'
+export type Lang = 'es' | 'en'
 export type Usage ={ context: ContextReading | null; limits: UsageLimit[] }
 
 declare module 'claude-code' {
@@ -15,6 +16,8 @@ declare module 'claude-code' {
       expanded: boolean
       /** How much the band shows: everything, one line per measure, or all the measures on a single line. */
       view: View
+      /** The panel's language: from settings.language at the start, or the one the person switched to; null until read. */
+      lang: Lang | null
     }
   }
 }

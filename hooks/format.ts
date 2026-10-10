@@ -1,4 +1,5 @@
 import type { Category, ContextReading, Usage, UsageLimit } from '../types'
+import type { Texts } from './i18n'
 
 export type Level = 'green' | 'yellow' | 'red'
 
@@ -22,18 +23,13 @@ export type Row = {
 export const CONTEXT_ACCENT = '#60a5fa'
 export const LIMIT_ACCENT = '#a78bfa'
 
-const DAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-
-const LABELS: Record<string, string> = {
-  five_hour: 'Límite de 5 horas',
-  seven_day: 'Límite semanal'
-}
-
-const SHORT_LABELS: Record<string, string> = {
-  five_hour: 'Límite 5 horas',
-  seven_day: 'Semanal'
-}
+/** The title and the short title of a plan window in the language; none for a kind the meter does not show. */
+const labelsOf = (kind: string, t: Texts) =>
+  kind === 'five_hour'
+    ? { label: t.fiveHour, short: t.fiveHourShort }
+    : kind === 'seven_day'
+      ? { label: t.sevenDay, short: t.sevenDayShort }
+      : null
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
@@ -44,8 +40,8 @@ export const level = (percent: number): Level => (percent > 80 ? 'red' : percent
 /** The percent as the badge beside the label shows it: ` 42% `. */
 export const percentBadge = (percent: number) => ` ${clampPercent(percent)}% `
 
-/** `2 h 10 min`, `3 d 4 h`, `45 min`; `menos de 1 min` below a minute. */
-export const relative = (ms: number) => {
+/** `2 h 10 min`, `3 d 4 h`, `45 min`; `menos de 1 min` (`less than 1 min`) below a minute. */
+export const relative = (ms: number, t: Texts) => {
   const minutes = Math.floor(Math.max(0, ms) / 60000)
   const days = Math.floor(minutes / 1440)
   const hours = Math.floor((minutes % 1440) / 60)
@@ -55,21 +51,22 @@ export const relative = (ms: number) => {
   if (hours > 0) return `${hours} h ${mins} min`
   if (minutes > 0) return `${mins} min`
 
-  return 'menos de 1 min'
+  return t.lessThanMinute
 }
 
 const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 
-/** 5-hour window: `hoy 18:40`, or `lun 18:40` when it crosses midnight. */
-export const shortDate = (at: Date, now: Date) => {
+/** 5-hour window: `hoy 18:40` (`today 18:40`), or `lun 18:40` when it crosses midnight. */
+export const shortDate = (at: Date, now: Date, t: Texts) => {
   const time = `${pad2(at.getHours())}:${pad2(at.getMinutes())}`
 
-  return sameDay(at, now) ? `hoy ${time}` : `${DAYS[at.getDay()]} ${time}`
+  return sameDay(at, now) ? `${t.today} ${time}` : `${t.weekdays[at.getDay()]} ${time}`
 }
 
-/** Weekly window: `lun 09 de oct`, no time. */
-export const longDate = (at: Date) => `${DAYS[at.getDay()]} ${pad2(at.getDate())} de ${MONTHS[at.getMonth()]}`
+/** Weekly window: `lun 09 de oct` (`Mon, Oct 09`), no time. */
+export const longDate = (at: Date, t: Texts) =>
+  t.weekDate(t.weekdays[at.getDay()], pad2(at.getDate()), t.months[at.getMonth()])
 
 /** `3d 20h`, `1h 52m`, `45m`; `<1m` below a minute: the time left in its shortest form. */
 export const compactRelative = (ms: number) => {
@@ -95,10 +92,10 @@ const msUntil = (resetsAt: string | undefined, nowMs: number) => {
 }
 
 /** The time left until the window resets, as `relative` writes it; empty without a valid timestamp. */
-export const resetRelative = (resetsAt: string | undefined, nowMs: number) => {
+export const resetRelative = (resetsAt: string | undefined, nowMs: number, t: Texts) => {
   const ms = msUntil(resetsAt, nowMs)
 
-  return ms === null ? '' : relative(ms)
+  return ms === null ? '' : relative(ms, t)
 }
 
 /** The same time left in its shortest form (`compactRelative`); empty without a valid timestamp. */
@@ -108,15 +105,15 @@ export const resetCompact = (resetsAt: string | undefined, nowMs: number) => {
   return ms === null ? '' : compactRelative(ms)
 }
 
-export const resetText = (kind: string, resetsAt: string | undefined, nowMs: number) => {
-  const left = resetRelative(resetsAt, nowMs)
+export const resetText = (kind: string, resetsAt: string | undefined, nowMs: number, t: Texts) => {
+  const left = resetRelative(resetsAt, nowMs, t)
 
   if (!left) return ''
 
   const at = new Date(resetsAt!)
-  const date = kind === 'seven_day' ? longDate(at) : shortDate(at, new Date(nowMs))
+  const date = kind === 'seven_day' ? longDate(at, t) : shortDate(at, new Date(nowMs), t)
 
-  return `Restablece en ${left} (${date})`
+  return t.resetsIn(left, date)
 }
 
 /** A note split around its strong part: what comes before, the part itself and what follows. */
@@ -126,23 +123,23 @@ export const splitNote = (note: string, strong: string): [string, string, string
   return at < 0 ? [note, '', ''] : [note.slice(0, at), strong, note.slice(at + strong.length)]
 }
 
-export const rowOf = (limit: UsageLimit, nowMs: number): Row | null => {
-  const label = LABELS[limit.kind]
+export const rowOf = (limit: UsageLimit, nowMs: number, t: Texts): Row | null => {
+  const names = labelsOf(limit.kind, t)
 
-  if (!label) return null
+  if (!names) return null
 
   const percent = clampPercent(limit.percentUsed)
 
   return {
     key: limit.kind,
-    label,
+    label: names.label,
     percent,
     level: level(percent),
     accent: LIMIT_ACCENT,
-    reset: resetText(limit.kind, limit.resetsAt, nowMs),
+    reset: resetText(limit.kind, limit.resetsAt, nowMs, t),
     detail: '',
-    strong: resetRelative(limit.resetsAt, nowMs),
-    short: SHORT_LABELS[limit.kind] ?? label,
+    strong: resetRelative(limit.resetsAt, nowMs, t),
+    short: names.short,
     brief: resetCompact(limit.resetsAt, nowMs)
   }
 }
@@ -157,9 +154,9 @@ export const compactTokens = (tokens: number) => {
   return String(Math.max(0, Math.round(tokens)))
 }
 
-/** `90k de 1M`; empty when the reading has no token count. */
-export const tokensText = (context: ContextReading) =>
-  context.tokens === null ? '' : `${compactTokens(context.tokens)} de ${compactTokens(context.window)}`
+/** `90k de 1M` (`90k of 1M`); empty when the reading has no token count. */
+export const tokensText = (context: ContextReading, t: Texts) =>
+  context.tokens === null ? '' : `${compactTokens(context.tokens)} ${t.of} ${compactTokens(context.window)}`
 
 export type Slice = { name: string; kind: Category['kind']; tokens: number; percent: number; color: string }
 
@@ -182,11 +179,11 @@ export const LEGEND_TEXT = '#9ca3af'
 export const FREE_COLOR = '#2f3442'
 export const BUFFER_COLOR = '#4b5263'
 
-const sliceName = (category: Category) =>
-  category.kind === 'free' ? 'Libre' : category.kind === 'buffer' ? 'Búfer' : category.name
+const sliceName = (category: Category, t: Texts) =>
+  category.kind === 'free' ? t.free : category.kind === 'buffer' ? t.buffer : category.name
 
 /** The categories that sit in the window, each with its color and its share of the window. */
-export const slicesOf = (categories: Category[]): Slice[] => {
+export const slicesOf = (categories: Category[], t: Texts): Slice[] => {
   const shown = categories.filter(category => category.kind !== 'deferred')
   const total = shown.reduce((sum, category) => sum + Math.max(0, category.tokens), 0)
 
@@ -195,7 +192,7 @@ export const slicesOf = (categories: Category[]): Slice[] => {
   let next = 0
 
   return shown.map(category => ({
-    name: sliceName(category),
+    name: sliceName(category, t),
     kind: category.kind,
     tokens: category.tokens,
     percent: Math.round((category.tokens / total) * 100),
@@ -238,31 +235,31 @@ export const legendLines = (slices: Slice[], columns: number): LegendItem[][] =>
   return lines
 }
 
-export const contextRow = (context: ContextReading): Row => {
+export const contextRow = (context: ContextReading, t: Texts): Row => {
   const p = clampPercent(context.percent)
 
   return {
     key: 'context',
-    label: 'Ventana de contexto',
+    label: t.context,
     percent: p,
     level: level(p),
     accent: CONTEXT_ACCENT,
     reset: '',
-    detail: tokensText(context),
+    detail: tokensText(context, t),
     strong: context.tokens === null ? '' : compactTokens(context.tokens),
-    short: 'Contexto',
+    short: t.contextShort,
     brief: context.tokens === null ? '' : compactTokens(context.tokens)
   }
 }
 
 /** Every row the meter shows for a usage reading, in display order. */
-export const rowsOf = (usage: Usage, nowMs: number): Row[] => {
+export const rowsOf = (usage: Usage, nowMs: number, t: Texts): Row[] => {
   const rows: Row[] = []
 
-  if (usage.context !== null) rows.push(contextRow(usage.context))
+  if (usage.context !== null) rows.push(contextRow(usage.context, t))
 
   for (const limit of usage.limits) {
-    const row = rowOf(limit, nowMs)
+    const row = rowOf(limit, nowMs, t)
 
     if (row) rows.push(row)
   }

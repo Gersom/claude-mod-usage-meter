@@ -1,8 +1,9 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Category, ContextReading, Usage, View } from '../types'
+import type { Category, ContextReading, Lang, Usage, View } from '../types'
 import type { Row } from './format'
+import { DEFAULT_LANG, detectLang, otherLang, textsOf } from './i18n'
 import {
   FREE_COLOR,
   LEGEND_GAP,
@@ -26,6 +27,7 @@ const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Record<string, number>)
 const expanded = atom({ plugin: 'usage-meter', key: 'expanded' } as const, false)
 const viewMode = atom({ plugin: 'usage-meter', key: 'view' } as const, 'full' as View)
+const langMode = atom({ plugin: 'usage-meter', key: 'lang' } as const, null as Lang | null)
 
 /** The context as the meter keeps it; none until the session reports a percent. */
 const contextOf = (
@@ -45,6 +47,24 @@ const categoriesOf = async ($: EngineInterface): Promise<Category[]> => {
   } catch {
     return []
   }
+}
+
+/**
+ * Settles the panel's language the first time: from settings.language, or the default when the
+ * settings do not say. A switch by hand later is the person's and is not overwritten.
+ */
+const ensureLang = async ($: EngineInterface) => {
+  if ((await read($, langMode)) !== null) return
+
+  let language: unknown
+
+  try {
+    language = (await $.settings.read()).language
+  } catch {
+    // No settings to read: the default language.
+  }
+
+  await update($, langMode, current => current ?? detectLang(language))
 }
 
 /** The running glide of each row, by key: the percent it moves toward and the timer that moves it. */
@@ -78,7 +98,7 @@ const glide = ($: EngineInterface, key: string, target: number) => {
 /** Rows new to the meter appear at their value; rows already shown glide to a changed one. */
 const sync = async ($: EngineInterface, current: Usage) => {
   const values = await read($, shown)
-  const targets = rowsOf(current, await $.clock.now())
+  const targets = rowsOf(current, await $.clock.now(), textsOf(DEFAULT_LANG))
   const fresh: Record<string, number> = {}
 
   for (const row of targets) {
@@ -92,6 +112,8 @@ const sync = async ($: EngineInterface, current: Usage) => {
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    await ensureLang($)
+
     try {
       const now = await $.session.usage()
       const reading: Usage = { context: contextOf(now.context, await categoriesOf($)), limits: now.rateLimits }
@@ -106,6 +128,8 @@ export const register: Register = on => {
   })
 
   on('session.measure', async ($, e, next) => {
+    await ensureLang($)
+
     const next_: Usage = { context: contextOf(e.context, await categoriesOf($)), limits: e.rateLimits }
 
     await update($, usage, () => next_)
@@ -123,7 +147,9 @@ export const register: Register = on => {
 
     const nowMs = await $.clock.now()
     const values = await read($, shown)
-    const targets = rowsOf(current, nowMs)
+    const lang = (await read($, langMode)) ?? DEFAULT_LANG
+    const t = textsOf(lang)
+    const targets = rowsOf(current, nowMs, t)
 
     if (targets.length === 0) {
       return next(e)
@@ -148,7 +174,7 @@ export const register: Register = on => {
     // The terminal draws a gray border around the band; the desktop draws none.
     const bordered = e.surface === 'terminal'
     const columns = e.props.bodyColumns - (bordered ? 4 : 2)
-    const slices = slicesOf(current.context?.categories ?? [])
+    const slices = slicesOf(current.context?.categories ?? [], t)
     const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
     const rows = targets.map(target => {
       const row = withPercent(target, values[target.key] ?? target.percent)
@@ -179,7 +205,7 @@ export const register: Register = on => {
           dimColor
           onPress={() => void update($, viewMode, value => (value === 'compact' ? 'full' : 'compact'))}
         >
-          {view === 'compact' ? '[+] Expandir' : '[-] Compactar'}
+          {view === 'compact' ? `[+] ${t.expand}` : `[-] ${t.compact}`}
         </Button>
         <Box marginLeft={2}>
           <Button
@@ -188,7 +214,17 @@ export const register: Register = on => {
             dimColor
             onPress={() => void update($, viewMode, value => (value === 'line' ? 'full' : 'line'))}
           >
-            {view === 'line' ? '[+] Expandir' : '[=] Una línea'}
+            {view === 'line' ? `[+] ${t.expand}` : `[=] ${t.oneLine}`}
+          </Button>
+        </Box>
+        <Box marginLeft={2}>
+          <Button
+            key="lang"
+            plain
+            dimColor
+            onPress={() => void update($, langMode, value => otherLang(value ?? DEFAULT_LANG))}
+          >
+            {`[${lang.toUpperCase()}]`}
           </Button>
         </Box>
       </Box>
@@ -265,7 +301,7 @@ export const register: Register = on => {
               {detailed && segmented ? (
                 <Box>
                   <Button key="categories" plain dimColor onPress={() => void update($, expanded, value => !value)}>
-                    {open ? '▾ Categorías' : '▸ Categorías'}
+                    {`${open ? '▾' : '▸'} ${t.categories}`}
                   </Button>
                 </Box>
               ) : null}
