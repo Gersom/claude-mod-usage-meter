@@ -70,6 +70,14 @@ Los diagramas de este README están en español.
 - **Idioma:** `$.settings.read()`, clave `language`; se lee una vez por sesión.
 - **Dibujo:** hook `ui.render` sobre `AbovePrompt` (franja sobre el prompt).
 
+## Consumo de tokens
+
+El mod no consume tokens del modelo ni agrega nada al contexto:
+
+- El manifiesto no declara skills, agentes, comandos ni servidores MCP, así que no suma descripciones ni herramientas al prompt del sistema.
+- Los tres hooks (`session.start`, `session.measure`, `ui.render`) solo observan: devuelven `next(e)` sin modificar el evento, no inyectan mensajes ni recordatorios, y `ui.render` solo dibuja la franja en la interfaz.
+- `$.session.usage()` sin desglose no cuesta nada, y `{ breakdown: 'summary' }` estima en local (a diferencia de `'full'`, que usa la API de conteo de tokens), así que llamarlo en cada medición no hace llamadas de red. No hace falta optimizarlo.
+
 ## Fuera de alcance
 
 - Costos o historial de uso.
