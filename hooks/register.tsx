@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, RenderElement, RenderNode } from 'claude-code'
 
 import type { Category, ContextReading, Lang, Usage, View } from '../types'
 import type { Row } from './format'
@@ -28,6 +28,16 @@ const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Recor
 const expanded = atom({ plugin: 'usage-meter', key: 'expanded' } as const, false)
 const viewMode = atom({ plugin: 'usage-meter', key: 'view' } as const, 'full' as View)
 const langMode = atom({ plugin: 'usage-meter', key: 'lang' } as const, null as Lang | null)
+
+/** Whether what another hook drew has nothing to show: no text, no border, nothing inside. */
+const isEmpty = (node: RenderNode | null | undefined): boolean => {
+  if (node === null || node === undefined) return true
+  if (typeof node === 'string') return node === ''
+  if (node.type !== 'Box' && node.type !== 'Text') return false
+  if (node.props?.borderStyle !== undefined) return false
+
+  return (node.children ?? []).every(isEmpty)
+}
 
 /** The context as the meter keeps it; none until the session reports a percent. */
 const contextOf = (
@@ -139,10 +149,12 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    // What other hooks draw in the band (cache-watch's) stays; the meter goes above it.
+    const below = await next(e)
     const current = await read($, usage)
 
     if (e.props.hasSurvey || current === null) {
-      return next(e)
+      return below
     }
 
     const nowMs = await $.clock.now()
@@ -152,7 +164,7 @@ export const register: Register = on => {
     const targets = rowsOf(current, nowMs, t)
 
     if (targets.length === 0) {
-      return next(e)
+      return below
     }
 
     const { Box, Button, Text } = $.ui.resolve(e)
@@ -230,8 +242,11 @@ export const register: Register = on => {
       </Box>
     )
 
+    const stacked = (meter: RenderElement) =>
+      isEmpty(below) ? meter : <Box flexDirection="column">{meter}{below}</Box>
+
     if (view === 'line') {
-      return (
+      return stacked(
         <Box {...frame} paddingX={1}>
           {/* One line, the buttons at its right end: what does not fit is cut off, never wrapped. */}
           <Box flexGrow={1} flexShrink={1}>
@@ -255,7 +270,7 @@ export const register: Register = on => {
       )
     }
 
-    return (
+    return stacked(
       <Box {...frame} paddingX={1} flexDirection="column">
         {rows.map(({ target, row, inline }, index) => {
           const moving = row.percent !== target.percent

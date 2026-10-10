@@ -327,3 +327,38 @@ test('yields to a survey', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
   await ui.unmount()
 })
+
+// Another plugin that draws in the band beneath this one, as cache-watch does.
+const other = {
+  name: 'other-band',
+  tier: 'append' as const,
+  register: (on: any) => {
+    on('ui.render', { component: 'AbovePrompt' }, () => ({
+      type: 'Box',
+      props: {},
+      children: [{ type: 'Text', props: {}, children: ['OTHER BAND'] }]
+    }))
+  }
+}
+
+test('lives beside another hook of the band: keeps what is below under the meter', { plugins: [other] }, async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('settings.read', spanish)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  mock.clock(on, { now: Date.now() })
+
+  // Nothing read yet: only the other band draws.
+  const before = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await before.find({ type: 'Text', text: /OTHER BAND/ })).toBeDefined()
+  expect(await before.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
+  await before.unmount()
+
+  await $.session.measure({ context: window, rateLimits: [], changed: ['context'] })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Text', text: /OTHER BAND/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
+  await ui.unmount()
+})
