@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
 import {
-  bar,
-  barParts,
   compactRelative,
   compactTokens,
   contextRow,
@@ -39,34 +37,6 @@ describe('level', () => {
     expect(level(80)).toBe('yellow')
     expect(level(81)).toBe('red')
     expect(level(100)).toBe('red')
-  })
-})
-
-describe('bar', () => {
-  test('ten cells, filled by rounded tenths', () => {
-    expect(bar(0)).toBe('░░░░░░░░░░')
-    expect(bar(7)).toBe('█░░░░░░░░░')
-    expect(bar(42)).toBe('████░░░░░░')
-    expect(bar(100)).toBe('██████████')
-  })
-
-  test('clamps out-of-range values', () => {
-    expect(bar(-5)).toBe('░░░░░░░░░░')
-    expect(bar(140)).toBe('██████████')
-  })
-})
-
-describe('barParts', () => {
-  test('splits the bar into filled and empty cells', () => {
-    expect(barParts(42)).toEqual({ filled: '████', empty: '░░░░░░' })
-    expect(barParts(0)).toEqual({ filled: '', empty: '░░░░░░░░░░' })
-    expect(barParts(100)).toEqual({ filled: '██████████', empty: '' })
-  })
-
-  test('takes any width', () => {
-    expect(barParts(50, 40).filled).toHaveLength(20)
-    expect(barParts(50, 40).empty).toHaveLength(20)
-    expect(barParts(100, 7)).toEqual({ filled: '███████', empty: '' })
   })
 })
 
@@ -269,29 +239,19 @@ describe('slicesOf', () => {
     { name: 'MCP tools (deferred)', tokens: 9000, kind: 'deferred' as const }
   ]
 
-  test('fills the bar exactly, leaving out what is deferred', () => {
-    const slices = slicesOf(categories, 40)
+  test('lists what sits in the window, leaving out what is deferred', () => {
+    const slices = slicesOf(categories)
 
     expect(slices.map(slice => slice.name)).toEqual(['System prompt', 'Messages', 'Libre', 'Búfer'])
-    expect(slices.reduce((sum, slice) => sum + slice.cells, 0)).toBe(40)
-    expect(slices.map(slice => slice.cells)).toEqual([1, 7, 28, 4])
+    expect(slices.map(slice => slice.tokens)).toEqual([4000, 36000, 140000, 20000])
   })
 
   test('shares are of what sits in the window', () => {
-    expect(slicesOf(categories, 40).map(slice => slice.percent)).toEqual([2, 18, 70, 10])
-  })
-
-  test('a used category with tokens keeps at least one cell', () => {
-    const tiny = [
-      { name: 'Skills', tokens: 10, kind: 'used' as const },
-      { name: 'Free space', tokens: 100000, kind: 'free' as const }
-    ]
-
-    expect(slicesOf(tiny, 20).map(slice => slice.cells)).toEqual([1, 19])
+    expect(slicesOf(categories).map(slice => slice.percent)).toEqual([2, 18, 70, 10])
   })
 
   test('free and buffer have their own colors, used ones are colored by name', () => {
-    const slices = slicesOf(categories, 40)
+    const slices = slicesOf(categories)
 
     expect(slices[0].color).toBe('#60a5fa')
     expect(slices[1].color).toBe('#a78bfa')
@@ -305,8 +265,7 @@ describe('slicesOf', () => {
         { name: 'MCP server instructions', tokens: 700, kind: 'used' },
         { name: 'Messages', tokens: 147000, kind: 'used' },
         { name: 'Free space', tokens: 771000, kind: 'free' }
-      ],
-      40
+      ]
     )
 
     expect(slices[0].color).toBe('#fb923c')
@@ -319,17 +278,16 @@ describe('slicesOf', () => {
         { name: 'Something new', tokens: 1000, kind: 'used' },
         { name: 'Another one', tokens: 1000, kind: 'used' },
         { name: 'Free space', tokens: 8000, kind: 'free' }
-      ],
-      40
+      ]
     )
 
     expect(slices[0].color).toBe('#94a3b8')
     expect(slices[1].color).toBe('#2dd4bf')
   })
 
-  test('nothing to draw without tokens or width', () => {
-    expect(slicesOf([], 40)).toEqual([])
-    expect(slicesOf(categories, 0)).toEqual([])
+  test('nothing to draw without tokens', () => {
+    expect(slicesOf([])).toEqual([])
+    expect(slicesOf([{ name: 'Free space', tokens: 0, kind: 'free' }])).toEqual([])
   })
 })
 
@@ -340,8 +298,7 @@ describe('legendLines', () => {
       { name: 'Messages', tokens: 36000, kind: 'used' },
       { name: 'Free space', tokens: 140000, kind: 'free' },
       { name: 'Autocompact buffer', tokens: 20000, kind: 'buffer' }
-    ],
-    40
+    ]
   )
   // Widths: `■ System prompt (2% ≈ 4k)` 25, `■ Messages (18% ≈ 36k)` 22, `■ Libre (70% ≈ 140k)` 20, `■ Búfer (10% ≈ 20k)` 19; 2 apart.
   const sizes = (lines: { length: number }[]) => lines.map(line => line.length)
@@ -386,12 +343,11 @@ describe('contextRow', () => {
 })
 
 describe('withPercent', () => {
-  test('shows another percent with its own bar, keeping the rest of the row', () => {
+  test('shows another percent, keeping the rest of the row', () => {
     const row = contextRow(reading(90))
     const moved = withPercent(row, 40)
 
     expect(moved.percent).toBe(40)
-    expect(moved.bar).toBe('████░░░░░░')
     expect(moved.label).toBe('Ventana de contexto')
     expect(moved.level).toBe('red')
   })

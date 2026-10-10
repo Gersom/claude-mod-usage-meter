@@ -8,7 +8,6 @@ export type Row = {
   percent: number
   level: Level
   accent: string
-  bar: string
   reset: string
   /** Extra text after the label, such as the context's tokens; empty when there is none. */
   detail: string
@@ -23,7 +22,6 @@ export type Row = {
 export const CONTEXT_ACCENT = '#60a5fa'
 export const LIMIT_ACCENT = '#a78bfa'
 
-const BAR_CELLS = 10
 const DAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
@@ -37,26 +35,11 @@ const SHORT_LABELS: Record<string, string> = {
   seven_day: 'Semanal'
 }
 
-const pad2 =(n: number) => String(n).padStart(2, '0')
+const pad2 = (n: number) => String(n).padStart(2, '0')
 
 export const clampPercent = (percent: number) => Math.max(0, Math.min(100, Math.round(percent)))
 
 export const level = (percent: number): Level => (percent > 80 ? 'red' : percent > 60 ? 'yellow' : 'green')
-
-const filledCells = (percent: number, cells = BAR_CELLS) => Math.round((clampPercent(percent) / 100) * cells)
-
-export const bar = (percent: number) => {
-  const filled = filledCells(percent)
-
-  return '█'.repeat(filled) + '░'.repeat(BAR_CELLS - filled)
-}
-
-/** The bar, `cells` wide, split in its filled and empty cells so each can take its own color. */
-export const barParts = (percent: number, cells = BAR_CELLS) => {
-  const filled = filledCells(percent, cells)
-
-  return { filled: '█'.repeat(filled), empty: '░'.repeat(cells - filled) }
-}
 
 /** The percent as the badge beside the label shows it: ` 42% `. */
 export const percentBadge = (percent: number) => ` ${clampPercent(percent)}% `
@@ -156,7 +139,6 @@ export const rowOf = (limit: UsageLimit, nowMs: number): Row | null => {
     percent,
     level: level(percent),
     accent: LIMIT_ACCENT,
-    bar: bar(percent),
     reset: resetText(limit.kind, limit.resetsAt, nowMs),
     detail: '',
     strong: resetRelative(limit.resetsAt, nowMs),
@@ -179,7 +161,7 @@ export const compactTokens = (tokens: number) => {
 export const tokensText = (context: ContextReading) =>
   context.tokens === null ? '' : `${compactTokens(context.tokens)} de ${compactTokens(context.window)}`
 
-export type Slice = { name: string; kind: Category['kind']; tokens: number; percent: number; cells: number; color: string }
+export type Slice = { name: string; kind: Category['kind']; tokens: number; percent: number; color: string }
 
 /** The color of each category the engine names; one it does not know takes the next of PALETTE. */
 const NAME_COLORS: Record<string, string> = {
@@ -203,24 +185,20 @@ export const BUFFER_COLOR = '#4b5263'
 const sliceName = (category: Category) =>
   category.kind === 'free' ? 'Libre' : category.kind === 'buffer' ? 'Búfer' : category.name
 
-/**
- * The categories that sit in the window, each with the cells it takes of a bar `cells` wide
- * (a used category with tokens always gets at least one) and its share of the window.
- */
-export const slicesOf = (categories: Category[], cells: number): Slice[] => {
+/** The categories that sit in the window, each with its color and its share of the window. */
+export const slicesOf = (categories: Category[]): Slice[] => {
   const shown = categories.filter(category => category.kind !== 'deferred')
   const total = shown.reduce((sum, category) => sum + Math.max(0, category.tokens), 0)
 
-  if (total <= 0 || cells <= 0) return []
+  if (total <= 0) return []
 
   let next = 0
 
-  const slices: Slice[] = shown.map(category => ({
+  return shown.map(category => ({
     name: sliceName(category),
     kind: category.kind,
     tokens: category.tokens,
     percent: Math.round((category.tokens / total) * 100),
-    cells: 0,
     color:
       category.kind === 'free'
         ? FREE_COLOR
@@ -228,23 +206,6 @@ export const slicesOf = (categories: Category[], cells: number): Slice[] => {
           ? BUFFER_COLOR
           : (NAME_COLORS[category.name] ?? PALETTE[next++ % PALETTE.length])
   }))
-
-  const exact = slices.map(slice => (slice.tokens / total) * cells)
-
-  slices.forEach((slice, index) => {
-    slice.cells = Math.floor(exact[index])
-
-    if (slice.kind === 'used' && slice.tokens > 0 && slice.cells === 0) slice.cells = 1
-  })
-
-  let diff = cells - slices.reduce((sum, slice) => sum + slice.cells, 0)
-  const byRemainder = slices.map((_, index) => index).sort((a, b) => (exact[b] % 1) - (exact[a] % 1))
-
-  for (let step = 0; diff > 0; step++, diff--) slices[byRemainder[step % byRemainder.length]].cells++
-
-  for (; diff < 0; diff++) slices.reduce((widest, slice) => (slice.cells > widest.cells ? slice : widest)).cells--
-
-  return slices
 }
 
 export type LegendItem = { color: string; name: string; tokens: string; percent: string }
@@ -286,7 +247,6 @@ export const contextRow = (context: ContextReading): Row => {
     percent: p,
     level: level(p),
     accent: CONTEXT_ACCENT,
-    bar: bar(p),
     reset: '',
     detail: tokensText(context),
     strong: context.tokens === null ? '' : compactTokens(context.tokens),
@@ -314,7 +274,7 @@ export const rowsOf = (usage: Usage, nowMs: number): Row[] => {
 export const withPercent = (row: Row, percent: number): Row => {
   const p = clampPercent(percent)
 
-  return { ...row, percent: p, bar: bar(p) }
+  return { ...row, percent: p }
 }
 
 /** What the row's header line holds besides its note: marker, label and percent badge. */

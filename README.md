@@ -88,7 +88,7 @@ usage-meter/
 ├── hooks/
 │   ├── hooks.json               # apunta a register.tsx
 │   ├── register.tsx             # hooks: session.start, session.measure, ui.render
-│   ├── format.ts                # lógica pura: barra, color, fechas, filas, categorías, leyenda, ajuste al ancho
+│   ├── format.ts                # lógica pura: color, fechas, filas, categorías, leyenda, ajuste al ancho
 │   └── *.test.ts                # tests (lógica y render)
 └── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila), expanded (leyenda abierta) y view (vista: completa, compacta o una línea)
 ```

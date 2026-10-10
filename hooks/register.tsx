@@ -17,7 +17,6 @@ import {
 } from './format'
 
 const BORDER_COLOR = '#4b5563'
-const BAR_MIN = 10
 const INDENT = 2
 const GAP = 3
 const STEP_MS = 40
@@ -149,7 +148,7 @@ export const register: Register = on => {
     // The terminal draws a gray border around the band; the desktop draws none.
     const bordered = e.surface === 'terminal'
     const columns = e.props.bodyColumns - (bordered ? 4 : 2)
-    const slices = slicesOf(current.context?.categories ?? [], Math.max(BAR_MIN, columns))
+    const slices = slicesOf(current.context?.categories ?? [])
     const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
     const rows = targets.map(target => {
       const row = withPercent(target, values[target.key] ?? target.percent)
