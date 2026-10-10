@@ -218,11 +218,8 @@ const itemWidth = (item: LegendItem) => 2 + item.name.length + 2 + item.percent.
 const lineWidth = (line: LegendItem[]) =>
   line.reduce((sum, item, index) => sum + itemWidth(item) + (index > 0 ? LEGEND_GAP : 0), 0)
 
-/**
- * The legend as lines of `■ name tokens %` items flowing to fit `columns`, at most `maxLines` of them.
- * When some do not fit, `hidden` counts the items left out, and the last line leaves room for a note on them.
- */
-export const legendLines = (slices: Slice[], columns: number, maxLines: number) => {
+/** The legend as lines of `■ name (% ≈ tokens)` items, all of them, flowing to fit `columns`. */
+export const legendLines = (slices: Slice[], columns: number): LegendItem[][] => {
   const items: LegendItem[] = slices.map(slice => ({
     color: slice.color,
     name: slice.name,
@@ -238,21 +235,7 @@ export const legendLines = (slices: Slice[], columns: number, maxLines: number) 
     else lines.push([item])
   }
 
-  if (lines.length <= maxLines) return { lines, hidden: 0 }
-
-  const kept = lines.slice(0, Math.max(0, maxLines))
-
-  if (kept.length === 0) return { lines: kept, hidden: items.length }
-
-  const last = kept[kept.length - 1]
-  let hidden = items.length - kept.reduce((sum, line) => sum + line.length, 0)
-
-  while (last.length > 1 && lineWidth(last) + LEGEND_GAP + ` +${hidden} más`.length > columns) {
-    last.pop()
-    hidden++
-  }
-
-  return { lines: kept, hidden }
+  return lines
 }
 
 export const contextRow = (context: ContextReading): Row => {

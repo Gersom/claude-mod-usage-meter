@@ -92,6 +92,54 @@ test('draws the context by category', async ($, on) => {
   await ui.unmount()
 })
 
+test('folds to one line per measure and unfolds again', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  on('session.usage', () => ({
+    value: {
+      startedAt: 0,
+      context: {
+        ...window,
+        breakdown: {
+          categories: [
+            { name: 'System prompt', tokens: 4000, color: 'a', isDeferred: false, kind: 'used' },
+            { name: 'Free space', tokens: 196000, color: 'c', isDeferred: false, kind: 'free' }
+          ]
+        }
+      },
+      rateLimits: [],
+      cost: { usd: 0 }
+    }
+  }) as never)
+  mock.clock(on, { now: Date.now() })
+
+  await $.session.measure({
+    context: window,
+    rateLimits: [{ kind: 'five_hour', percentUsed: 23 }],
+    changed: ['context', 'rateLimits']
+  })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Button', key: 'compact', text: /Compactar/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'categories' })).toBeDefined()
+
+  await ui.press({ key: 'categories' })
+  await ui.press({ key: 'compact' })
+
+  expect(await ui.find({ type: 'Button', key: 'compact', text: /Expandir/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'categories' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Límite de 5 horas/ })).toBeDefined()
+
+  await ui.press({ key: 'compact' })
+
+  expect(await ui.find({ type: 'Button', key: 'categories' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeDefined()
+  await ui.unmount()
+})
+
 test('keeps the plan windows in view when the band has little room', async ($, on) => {
   on('ui.render', () => engineBand)
   on('session.measure', ($, e) => ({ changed: e.changed }))

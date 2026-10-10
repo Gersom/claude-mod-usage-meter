@@ -12,6 +12,8 @@ declare module 'claude-code' {
       shown: Record<string, number>
       /** Whether the category legend under Contexto is open; closed until the person opens it. */
       expanded: boolean
+      /** Whether the band is folded to one line per measure, with no bars, categories or legend. */
+      compact: boolean
     }
   }
 }

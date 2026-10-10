@@ -297,36 +297,22 @@ describe('legendLines', () => {
   const sizes = (lines: { length: number }[]) => lines.map(line => line.length)
 
   test('each item carries its name, tokens and percent as they are, unpadded', () => {
-    const { lines } = legendLines(slices, 200, Infinity)
+    const lines = legendLines(slices, 200)
 
     expect(lines[0].map(item => item.name)).toEqual(['System prompt', 'Messages', 'Libre', 'Búfer'])
     expect(lines[0].map(item => item.tokens)).toEqual(['4k', '36k', '140k', '20k'])
     expect(lines[0].map(item => item.percent)).toEqual(['2%', '18%', '70%', '10%'])
   })
 
-  test('flows into lines as the width allows', () => {
-    expect(sizes(legendLines(slices, 200, Infinity).lines)).toEqual([4])
-    expect(sizes(legendLines(slices, 75, Infinity).lines)).toEqual([3, 1])
-    expect(sizes(legendLines(slices, 49, Infinity).lines)).toEqual([2, 2])
-    expect(sizes(legendLines(slices, 10, Infinity).lines)).toEqual([1, 1, 1, 1])
-  })
-
-  test('keeps to the lines it is given and counts what it left out', () => {
-    expect(legendLines(slices, 49, 2)).toMatchObject({ hidden: 0 })
-    expect(legendLines(slices, 49, 0)).toEqual({ lines: [], hidden: 4 })
-  })
-
-  test('leaves room on the last line for the note on what is hidden', () => {
-    // 25 + 2 + 22 = 49 fills the line, with no room for the ` +2 más` note, so the second item goes too.
-    const cut = legendLines(slices, 49, 1)
-
-    expect(sizes(cut.lines)).toEqual([1])
-    expect(cut.hidden).toBe(3)
-    expect(legendLines(slices, 60, 1)).toMatchObject({ hidden: 2 })
+  test('flows into lines as the width allows, never leaving an item out', () => {
+    expect(sizes(legendLines(slices, 200))).toEqual([4])
+    expect(sizes(legendLines(slices, 75))).toEqual([3, 1])
+    expect(sizes(legendLines(slices, 49))).toEqual([2, 2])
+    expect(sizes(legendLines(slices, 10))).toEqual([1, 1, 1, 1])
   })
 
   test('nothing to list without slices', () => {
-    expect(legendLines([], 80, Infinity)).toEqual({ lines: [], hidden: 0 })
+    expect(legendLines([], 80)).toEqual([])
   })
 })
 

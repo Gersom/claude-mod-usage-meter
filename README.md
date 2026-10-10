@@ -42,7 +42,8 @@ Con las categorías abiertas, bajo `▾ Categorías`:
 - **Barra:** una sola por medida, a todo el ancho; lo lleno en el color del umbral (o de la medida mientras se anima) y lo vacío en gris oscuro. En `Contexto`, la barra segmentada por categorías reemplaza a la simple. Las barras son cajas que se reparten la línea por proporción (no texto repetido), así que llenan el ancho real sin partirse en dos líneas.
 - **Leyenda:** las categorías van seguidas (`■ nombre (% ≈ tokens)`), y pasan a otra línea cuando no caben; no van en columnas. Todo el texto va en gris (`#9ca3af`), más oscuro que el normal, para que destaquen los cuadros de color; los tokens en negrita. Solo se dibuja con las categorías abiertas (el estado `expanded`, cerrado al empezar).
 - **Colores de las categorías:** por nombre: `System prompt` azul, `System tools` celeste, `MCP server instructions` naranja, `Custom agents` verde, `Memory files` amarillo, `Skills` rosa, `Messages` violeta. Una categoría que el mod no conoce toma el siguiente color de reserva. `Libre` y `Búfer` van en gris oscuro.
-- **Alto del recuadro:** la franja admite `maxRows` filas y, si el contenido es más alto, las últimas se desplazan fuera de vista (los límites de 5 horas y semanal quedaban ocultos). Por eso se reparte así: primero las cabeceras y barras de todas las medidas (y el texto `Categorías`), luego las líneas en blanco entre medidas y por último la leyenda (si no cabe entera, muestra las primeras líneas y `+N más`).
+- **Alto del recuadro:** la franja admite `maxRows` filas y, si el contenido es más alto, las últimas se desplazan fuera de vista (los límites de 5 horas y semanal quedaban ocultos). Por eso las líneas en blanco entre medidas se quitan cuando ni las cabeceras y barras caben con holgura. La leyenda, abierta, muestra siempre todas las categorías, así que con muchas puede desplazar fuera de vista las últimas medidas: se cierra con `▾ Categorías` o se compacta.
+- **Compactar:** el botón `[-] Compactar`, al pie, deja una sola línea por medida (título, texto de la derecha y porcentaje): sin barras, sin `▸ Categorías` ni leyenda, y sin líneas en blanco. Pasa a `[+] Expandir`, que lo deshace. Empieza expandido; las categorías conservan si estaban abiertas.
 - **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
 - **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Va a la derecha de la cabecera; si no cabe, pasa a una segunda línea debajo de ella.
 
@@ -87,7 +88,7 @@ usage-meter/
 │   ├── register.tsx             # hooks: session.start, session.measure, ui.render
 │   ├── format.ts                # lógica pura: barra, color, fechas, filas, categorías, leyenda, ajuste al ancho
 │   └── *.test.ts                # tests (lógica y render)
-└── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila) y expanded (leyenda abierta)
+└── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila), expanded (leyenda abierta) y compact (panel compactado)
 ```
 
 ## Limitaciones conocidas

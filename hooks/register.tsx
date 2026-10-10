@@ -25,6 +25,7 @@ const EASE = 0.35
 const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Record<string, number>)
 const expanded = atom({ plugin: 'usage-meter', key: 'expanded' } as const, false)
+const compact = atom({ plugin: 'usage-meter', key: 'compact' } as const, false)
 
 /** The context as the meter keeps it; none until the session reports a percent. */
 const contextOf = (
@@ -130,6 +131,7 @@ export const register: Register = on => {
 
     const { Box, Button, Text } = $.ui.resolve(e)
     const open = await read($, expanded)
+    const folded = await read($, compact)
 
     /** The row's note, dim but for its strong part (tokens, time left), which takes the label's color. */
     const noteOf = (row: Row, before: string, after: string) => {
@@ -154,13 +156,17 @@ export const register: Register = on => {
       return { target, row, inline: inlineFits(row, columns) }
     })
 
-    // The band holds `maxRows`, and a taller one scrolls its last rows out of view, so what
-    // the measures need comes first, then the blank lines between them, and the legend last.
-    const toggle = slices.length > 0 ? 1 : 0
-    const base = rows.reduce((sum, { row, inline }) => sum + 2 + (!inline && row.reset ? 1 : 0), toggle)
-    const spare = Math.max(0, e.props.maxRows - (bordered ? 2 : 0) - base)
-    const separated = spare >= rows.length - 1
-    const legend = legendLines(slices, columns, open ? spare - (separated ? rows.length - 1 : 0) : 0)
+    // Folded, the band keeps only each measure's header line. The band holds `maxRows`, and a taller
+    // one scrolls its last rows out of view, so the blank lines between measures go when even the
+    // measures barely fit; the legend, open, is always whole.
+    const detailed = !folded
+    const toggle = detailed && slices.length > 0 ? 1 : 0
+    const base = rows.reduce(
+      (sum, { row, inline }) => sum + (detailed ? 2 : 1) + (!inline && row.reset ? 1 : 0),
+      toggle + 1
+    )
+    const separated = detailed && e.props.maxRows - (bordered ? 2 : 0) - base >= rows.length - 1
+    const legend = open ? legendLines(slices, columns) : []
 
     return (
       <Box borderStyle={bordered ? 'round' : undefined} borderColor="gray" paddingX={1} flexDirection="column">
@@ -187,7 +193,7 @@ export const register: Register = on => {
                 noteOf(row, ' '.repeat(INDENT), '')
               ) : null}
               {/* The bars are Boxes that share the line by flex, so they fill it however wide it really is. */}
-              {segmented ? (
+              {!detailed ? null : segmented ? (
                 <Box height={1}>
                   {slices.map((slice, at) => (
                     <Box
@@ -205,15 +211,15 @@ export const register: Register = on => {
                   <Box flexGrow={100 - row.percent} flexShrink={0} backgroundColor={FREE_COLOR} />
                 </Box>
               )}
-              {segmented ? (
+              {detailed && segmented ? (
                 <Box>
                   <Button key="categories" plain dimColor onPress={() => void update($, expanded, value => !value)}>
                     {open ? '▾ Categorías' : '▸ Categorías'}
                   </Button>
                 </Box>
               ) : null}
-              {segmented
-                ? legend.lines.map((items, at) => (
+              {detailed && segmented
+                ? legend.map((items, at) => (
                     <Box key={at}>
                       {items.map((item, column) => (
                         <Box key={column} marginRight={column < items.length - 1 ? LEGEND_GAP : 0}>
@@ -225,15 +231,17 @@ export const register: Register = on => {
                           <Text color={LEGEND_TEXT}>{')'}</Text>
                         </Box>
                       ))}
-                      {legend.hidden > 0 && at === legend.lines.length - 1 ? (
-                        <Text dimColor>{`${' '.repeat(LEGEND_GAP)}+${legend.hidden} más`}</Text>
-                      ) : null}
                     </Box>
                   ))
                 : null}
             </Box>
           )
         })}
+        <Box>
+          <Button key="compact" plain dimColor onPress={() => void update($, compact, value => !value)}>
+            {folded ? '[+] Expandir' : '[-] Compactar'}
+          </Button>
+        </Box>
       </Box>
     )
   })
