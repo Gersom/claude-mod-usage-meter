@@ -2,7 +2,19 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Category, ContextReading, Usage } from '../types'
-import { FREE_COLOR, LEGEND_GAP, LEGEND_TEXT, inlineFits, legendLines, percentBadge, rowsOf, slicesOf, withPercent } from './format'
+import type { Row } from './format'
+import {
+  FREE_COLOR,
+  LEGEND_GAP,
+  LEGEND_TEXT,
+  inlineFits,
+  legendLines,
+  percentBadge,
+  rowsOf,
+  slicesOf,
+  splitNote,
+  withPercent
+} from './format'
 
 const BAR_MIN = 10
 const INDENT = 2
@@ -118,6 +130,19 @@ export const register: Register = on => {
 
     const { Box, Button, Text } = $.ui.resolve(e)
     const open = await read($, expanded)
+
+    /** The row's note, dim but for its strong part (tokens, time left), which takes the label's color. */
+    const noteOf = (row: Row, before: string, after: string) => {
+      const [head, strong, tail] = splitNote(row.reset || row.detail, row.strong)
+
+      return (
+        <Box>
+          <Text dimColor>{`${before}${head}`}</Text>
+          {strong ? <Text>{strong}</Text> : null}
+          {tail || after ? <Text dimColor>{`${tail}${after}`}</Text> : null}
+        </Box>
+      )
+    }
     const columns = e.props.bodyColumns - 2
     const slices = slicesOf(current.context?.categories ?? [], Math.max(BAR_MIN, columns))
     const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
@@ -150,16 +175,14 @@ export const register: Register = on => {
                   <Text bold>{row.label}</Text>
                 </Box>
                 <Box>
-                  {inline && note ? <Text dimColor>{`${note}${' '.repeat(GAP)}`}</Text> : null}
+                  {inline && note ? noteOf(row, '', ' '.repeat(GAP)) : null}
                   <Text bold color="black" backgroundColor={row.level}>
                     {percentBadge(row.percent)}
                   </Text>
                 </Box>
               </Box>
               {!inline && row.reset ? (
-                <Box>
-                  <Text dimColor>{`${' '.repeat(INDENT)}${row.reset}`}</Text>
-                </Box>
+                noteOf(row, ' '.repeat(INDENT), '')
               ) : null}
               {/* The bars are Boxes that share the line by flex, so they fill it however wide it really is. */}
               {segmented ? (

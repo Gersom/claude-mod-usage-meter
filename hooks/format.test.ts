@@ -11,11 +11,13 @@ import {
   longDate,
   percentBadge,
   relative,
+  resetRelative,
   resetText,
   rowOf,
   rowsOf,
   shortDate,
   slicesOf,
+  splitNote,
   tokensText,
   withPercent
 } from './format'
@@ -123,12 +125,42 @@ describe('resetText', () => {
   })
 })
 
+describe('resetRelative', () => {
+  const now = new Date(2026, 9, 8, 16, 30).getTime()
+
+  test('the time left, without the rest of the note', () => {
+    expect(resetRelative(new Date(2026, 9, 8, 18, 40).toISOString(), now)).toBe('2 h 10 min')
+    expect(resetRelative(new Date(2026, 9, 12, 20, 30).toISOString(), now)).toBe('4 d 4 h')
+  })
+
+  test('no or invalid timestamp gives nothing', () => {
+    expect(resetRelative(undefined, now)).toBe('')
+    expect(resetRelative('nope', now)).toBe('')
+  })
+})
+
+describe('splitNote', () => {
+  test('splits the note around its strong part', () => {
+    expect(splitNote('Restablece en 2 h 10 min (hoy 18:40)', '2 h 10 min')).toEqual([
+      'Restablece en ',
+      '2 h 10 min',
+      ' (hoy 18:40)'
+    ])
+    expect(splitNote('84k de 200k', '84k')).toEqual(['', '84k', ' de 200k'])
+  })
+
+  test('without a strong part, or one the note lacks, it is all before', () => {
+    expect(splitNote('84k de 200k', '')).toEqual(['84k de 200k', '', ''])
+    expect(splitNote('84k de 200k', '1M')).toEqual(['84k de 200k', '', ''])
+  })
+})
+
 describe('rowOf', () => {
   const now = new Date(2026, 9, 8, 16, 30).getTime()
 
   test('maps the two plan windows and ignores the rest', () => {
-    expect(rowOf({ kind: 'five_hour', percentUsed: 23.5 }, now)?.label).toBe('5 horas')
-    expect(rowOf({ kind: 'seven_day', percentUsed: 7 }, now)?.label).toBe('Semana')
+    expect(rowOf({ kind: 'five_hour', percentUsed: 23.5 }, now)?.label).toBe('Límite de 5 horas')
+    expect(rowOf({ kind: 'seven_day', percentUsed: 7 }, now)?.label).toBe('Límite semanal')
     expect(rowOf({ kind: 'spend_limit', percentUsed: 50 }, now)).toBeNull()
   })
 
@@ -310,6 +342,11 @@ describe('contextRow', () => {
     expect(contextRow(reading(42, 84000)).detail).toBe('84k de 200k')
     expect(contextRow(reading(42)).detail).toBe('')
   })
+
+  test('its tokens are the strong part of its note', () => {
+    expect(contextRow(reading(42, 84000)).strong).toBe('84k')
+    expect(contextRow(reading(42)).strong).toBe('')
+  })
 })
 
 describe('withPercent', () => {
@@ -319,7 +356,7 @@ describe('withPercent', () => {
 
     expect(moved.percent).toBe(40)
     expect(moved.bar).toBe('████░░░░░░')
-    expect(moved.label).toBe('Contexto')
+    expect(moved.label).toBe('Ventana de contexto')
     expect(moved.level).toBe('red')
   })
 })
@@ -334,7 +371,7 @@ describe('inlineFits', () => {
   })
 
   test('does not fit when the reset text would overflow', () => {
-    const headWidth = 15
+    const headWidth = 25
 
     expect(inlineFits(row, headWidth + 3 + row.reset.length)).toBe(true)
     expect(inlineFits(row, headWidth + 3 + row.reset.length - 1)).toBe(false)

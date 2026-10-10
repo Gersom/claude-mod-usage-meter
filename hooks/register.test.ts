@@ -17,7 +17,7 @@ test('draws nothing until there is a reading', async ($, on) => {
 
   const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
 
-  expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
   await ui.unmount()
 })
 
@@ -40,11 +40,12 @@ test('draws context and both plan windows as percentages', async ($, on) => {
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'usage-meter', surface, ...BAND })
 
-    expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /5 horas/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /Semana/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Límite de 5 horas/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Límite semanal/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /42%/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /84k de 200k/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^84k$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /de 200k/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Restablece en/ })).toBeDefined()
     await ui.unmount()
   }
@@ -125,8 +126,8 @@ test('keeps the plan windows in view when the band has little room', async ($, o
   const tight = { ...BAND, props: { hasSurvey: false, isWorking: false, maxRows: 8, bodyColumns: 80 } as never }
   const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...tight })
 
-  expect(await ui.find({ type: 'Text', text: /5 horas/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /Semana/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Límite de 5 horas/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Límite semanal/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeUndefined()
   await ui.unmount()
 })
@@ -143,7 +144,7 @@ test('draws the context without categories when the session gives none', async (
 
   const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
 
-  expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Libre/ })).toBeUndefined()
   await ui.unmount()
 })
@@ -162,6 +163,6 @@ test('yields to a survey', async ($, on) => {
     props: { hasSurvey: true, isWorking: false, maxRows: 10, bodyColumns: 80 } as never
   })
 
-  expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
   await ui.unmount()
 })

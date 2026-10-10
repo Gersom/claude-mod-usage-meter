@@ -12,6 +12,8 @@ export type Row = {
   reset: string
   /** Extra text after the label, such as the context's tokens; empty when there is none. */
   detail: string
+  /** The part of the note (`reset` or `detail`) drawn in the title's color, not dim: the tokens, the time left. */
+  strong: string
 }
 
 export const CONTEXT_ACCENT = '#60a5fa'
@@ -22,8 +24,8 @@ const DAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
 const LABELS: Record<string, string> = {
-  five_hour: '5 horas',
-  seven_day: 'Semana'
+  five_hour: 'Límite de 5 horas',
+  seven_day: 'Límite semanal'
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
@@ -77,16 +79,31 @@ export const shortDate = (at: Date, now: Date) => {
 /** Weekly window: `lun 09 de oct`, no time. */
 export const longDate = (at: Date) => `${DAYS[at.getDay()]} ${pad2(at.getDate())} de ${MONTHS[at.getMonth()]}`
 
-export const resetText = (kind: string, resetsAt: string | undefined, nowMs: number) => {
+/** The time left until the window resets, as `relative` writes it; empty without a valid timestamp. */
+export const resetRelative = (resetsAt: string | undefined, nowMs: number) => {
   if (!resetsAt) return ''
 
   const at = new Date(resetsAt)
 
-  if (Number.isNaN(at.getTime())) return ''
+  return Number.isNaN(at.getTime()) ? '' : relative(at.getTime() - nowMs)
+}
 
+export const resetText = (kind: string, resetsAt: string | undefined, nowMs: number) => {
+  const left = resetRelative(resetsAt, nowMs)
+
+  if (!left) return ''
+
+  const at = new Date(resetsAt!)
   const date = kind === 'seven_day' ? longDate(at) : shortDate(at, new Date(nowMs))
 
-  return `Restablece en ${relative(at.getTime() - nowMs)} (${date})`
+  return `Restablece en ${left} (${date})`
+}
+
+/** A note split around its strong part: what comes before, the part itself and what follows. */
+export const splitNote = (note: string, strong: string): [string, string, string] => {
+  const at = strong ? note.indexOf(strong) : -1
+
+  return at < 0 ? [note, '', ''] : [note.slice(0, at), strong, note.slice(at + strong.length)]
 }
 
 export const rowOf = (limit: UsageLimit, nowMs: number): Row | null => {
@@ -104,7 +121,8 @@ export const rowOf = (limit: UsageLimit, nowMs: number): Row | null => {
     accent: LIMIT_ACCENT,
     bar: bar(percent),
     reset: resetText(limit.kind, limit.resetsAt, nowMs),
-    detail: ''
+    detail: '',
+    strong: resetRelative(limit.resetsAt, nowMs)
   }
 }
 
@@ -242,13 +260,14 @@ export const contextRow = (context: ContextReading): Row => {
 
   return {
     key: 'context',
-    label: 'Contexto',
+    label: 'Ventana de contexto',
     percent: p,
     level: level(p),
     accent: CONTEXT_ACCENT,
     bar: bar(p),
     reset: '',
-    detail: tokensText(context)
+    detail: tokensText(context),
+    strong: context.tokens === null ? '' : compactTokens(context.tokens)
   }
 }
 

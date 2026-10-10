@@ -18,14 +18,14 @@ Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcenta
 Sin borde, un bloque por medida, separados por una línea en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto` hay un texto `▸ Categorías` que se pulsa para abrir la leyenda (`▾ Categorías`) y se vuelve a pulsar para cerrarla; por defecto está cerrada:
 
 ```
- ◆ Contexto                                           84k de 200k   42%
+ ◆ Ventana de contexto                                 84k de 200k   42%
  ██████████████████████████████████████████████████████████████████████
  ▸ Categorías
 
- ◆ 5 horas                   Restablece en 2 h 10 min (hoy 18:40)   23%
+ ◆ Límite de 5 horas         Restablece en 2 h 10 min (hoy 18:40)   23%
  ██████████████████████████████████████████████████████████████████████
 
- ◆ Semana                    Restablece en 3 d 4 h (lun 09 de oct)   7%
+ ◆ Límite semanal            Restablece en 3 d 4 h (lun 09 de oct)   7%
  ██████████████████████████████████████████████████████████████████████
 ```
 
@@ -35,7 +35,9 @@ Con las categorías abiertas, bajo `▾ Categorías`:
  ■ System prompt (2% ≈ 4k)  ■ Messages (40% ≈ 80k)  ■ Libre (58% ≈ 116k)
 ```
 
-- **Colores por medida:** el `◆` de `Contexto` va en azul (`#60a5fa`); el de `5 horas` y `Semana` en violeta (`#a78bfa`). La etiqueta va en negrita, sin color.
+- **Títulos:** `Ventana de contexto`, `Límite de 5 horas` y `Límite semanal`.
+- **Colores por medida:** el `◆` de `Ventana de contexto` va en azul (`#60a5fa`); el de los dos límites en violeta (`#a78bfa`). La etiqueta va en negrita, sin color.
+- **Texto de la derecha:** en gris atenuado, salvo el dato principal, que va en el blanco del título (sin negrita): los tokens usados (`84k` de `84k de 200k`) y el tiempo que falta (`2 h 10 min`, `3 d 4 h`).
 - **Porcentaje:** recuadro con fondo del color del umbral y texto negro: verde hasta 60%, amarillo de 60% a 80%, rojo por encima de 80%.
 - **Barra:** una sola por medida, a todo el ancho; lo lleno en el color del umbral (o de la medida mientras se anima) y lo vacío en gris oscuro. En `Contexto`, la barra segmentada por categorías reemplaza a la simple. Las barras son cajas que se reparten la línea por proporción (no texto repetido), así que llenan el ancho real sin partirse en dos líneas.
 - **Leyenda:** las categorías van seguidas (`■ nombre (% ≈ tokens)`), y pasan a otra línea cuando no caben; no van en columnas. Todo el texto va en gris (`#9ca3af`), más oscuro que el normal, para que destaquen los cuadros de color; los tokens en negrita. Solo se dibuja con las categorías abiertas (el estado `expanded`, cerrado al empezar).
