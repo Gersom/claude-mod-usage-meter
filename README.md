@@ -104,6 +104,11 @@ O en dos pasos:
 
 También forma parte de la colección [`gersom-claude-mods`](https://github.com/Gersom/gersom-claude-mods): `/plugin marketplace add Gersom/gersom-claude-mods` y luego `/plugin install usage-meter@gersom-claude-mods`.
 
+**En la app de escritorio:**
+
+1. Agregar el marketplace: **Configuración → Plugins → Añadir → Añadir marketplace → Añadir desde un repositorio**, pegar la URL del repo (`https://github.com/Gersom/claude-mod-usage-meter`) y pulsar **Sincronizar**. Para toda la colección, usar `https://github.com/Gersom/gersom-claude-mods`.
+2. Encontrar el mod: en **Plugins → Descubrir**, abrir el filtro y elegir **Origen →** el nombre del marketplace (`usage-meter` o `gersom-claude-mods`). Ahí aparece `usage-meter` para instalarlo.
+
 Este mod corre con tus permisos, como cualquier plugin; `claude plugin validate` lista los hooks y las llamadas que hace antes de instalarlo.
 
 ## Uso
