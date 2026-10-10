@@ -140,6 +140,42 @@ test('folds to one line per measure and unfolds again', async ($, on) => {
   await ui.unmount()
 })
 
+test('puts everything on a single line and unfolds again', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  mock.clock(on, { now: Date.now() })
+
+  const inTwoHours = new Date(Date.now() + 2 * 3600000 + 30000).toISOString()
+
+  await $.session.measure({
+    context: window,
+    rateLimits: [
+      { kind: 'five_hour', percentUsed: 17, resetsAt: inTwoHours },
+      { kind: 'seven_day', percentUsed: 26 }
+    ],
+    changed: ['context', 'rateLimits']
+  })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Button', key: 'line', text: /Una línea/ })).toBeDefined()
+
+  await ui.press({ key: 'line' })
+
+  expect(await ui.find({ type: 'Button', key: 'line', text: /Expandir/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Límite 5 horas/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Semanal/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /\(84k\)/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /\(2h 0m\)/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
+
+  await ui.press({ key: 'line' })
+
+  expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
+  await ui.unmount()
+})
+
 test('keeps the plan windows in view when the band has little room', async ($, on) => {
   on('ui.render', () => engineBand)
   on('session.measure', ($, e) => ({ changed: e.changed }))

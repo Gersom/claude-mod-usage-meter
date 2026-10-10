@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Category, ContextReading, Usage } from '../types'
+import type { Category, ContextReading, Usage, View } from '../types'
 import type { Row } from './format'
 import {
   FREE_COLOR,
@@ -16,6 +16,7 @@ import {
   withPercent
 } from './format'
 
+const BORDER_COLOR = '#4b5563'
 const BAR_MIN = 10
 const INDENT = 2
 const GAP = 3
@@ -25,7 +26,7 @@ const EASE = 0.35
 const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Record<string, number>)
 const expanded = atom({ plugin: 'usage-meter', key: 'expanded' } as const, false)
-const compact = atom({ plugin: 'usage-meter', key: 'compact' } as const, false)
+const viewMode = atom({ plugin: 'usage-meter', key: 'view' } as const, 'full' as View)
 
 /** The context as the meter keeps it; none until the session reports a percent. */
 const contextOf = (
@@ -131,7 +132,7 @@ export const register: Register = on => {
 
     const { Box, Button, Text } = $.ui.resolve(e)
     const open = await read($, expanded)
-    const folded = await read($, compact)
+    const view = await read($, viewMode)
 
     /** The row's note, dim but for its strong part (tokens, time left), which takes the label's color. */
     const noteOf = (row: Row, before: string, after: string) => {
@@ -159,7 +160,7 @@ export const register: Register = on => {
     // Folded, the band keeps only each measure's header line. The band holds `maxRows`, and a taller
     // one scrolls its last rows out of view, so the blank lines between measures go when even the
     // measures barely fit; the legend, open, is always whole.
-    const detailed = !folded
+    const detailed = view === 'full'
     const toggle = detailed && slices.length > 0 ? 1 : 0
     const base = rows.reduce(
       (sum, { row, inline }) => sum + (detailed ? 2 : 1) + (!inline && row.reset ? 1 : 0),
@@ -168,8 +169,54 @@ export const register: Register = on => {
     const separated = detailed && e.props.maxRows - (bordered ? 2 : 0) - base >= rows.length - 1
     const legend = open ? legendLines(slices, columns) : []
 
+    const frame = bordered ? { borderStyle: 'round' as const, borderColor: BORDER_COLOR } : {}
+
+    // Each button toggles its own view and, pressed again, goes back to the full one.
+    const controls = (
+      <Box justifyContent="flex-end">
+        <Button
+          key="compact"
+          plain
+          dimColor
+          onPress={() => void update($, viewMode, value => (value === 'compact' ? 'full' : 'compact'))}
+        >
+          {view === 'compact' ? '[+] Expandir' : '[-] Compactar'}
+        </Button>
+        <Box marginLeft={2}>
+          <Button
+            key="line"
+            plain
+            dimColor
+            onPress={() => void update($, viewMode, value => (value === 'line' ? 'full' : 'line'))}
+          >
+            {view === 'line' ? '[+] Expandir' : '[=] Una línea'}
+          </Button>
+        </Box>
+      </Box>
+    )
+
+    if (view === 'line') {
+      return (
+        <Box {...frame} paddingX={1} flexDirection="column">
+          <Box flexWrap="wrap">
+            {rows.map(({ row }, index) => (
+              <Box key={row.key}>
+                {index > 0 ? <Text dimColor>{' - '}</Text> : null}
+                <Text bold>{`${row.short} `}</Text>
+                <Text bold color="black" backgroundColor={row.level}>
+                  {percentBadge(row.percent)}
+                </Text>
+                {row.brief ? <Text dimColor>{` (${row.brief})`}</Text> : null}
+              </Box>
+            ))}
+          </Box>
+          {controls}
+        </Box>
+      )
+    }
+
     return (
-      <Box borderStyle={bordered ? 'round' : undefined} borderColor="gray" paddingX={1} flexDirection="column">
+      <Box {...frame} paddingX={1} flexDirection="column">
         {rows.map(({ target, row, inline }, index) => {
           const moving = row.percent !== target.percent
           const note = row.reset || row.detail
@@ -237,11 +284,7 @@ export const register: Register = on => {
             </Box>
           )
         })}
-        <Box>
-          <Button key="compact" plain dimColor onPress={() => void update($, compact, value => !value)}>
-            {folded ? '[+] Expandir' : '[-] Compactar'}
-          </Button>
-        </Box>
+        {controls}
       </Box>
     )
   })

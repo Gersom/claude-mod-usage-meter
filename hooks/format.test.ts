@@ -3,6 +3,7 @@ import { describe, expect, test } from 'claude-code/testing'
 import {
   bar,
   barParts,
+  compactRelative,
   compactTokens,
   contextRow,
   inlineFits,
@@ -11,6 +12,7 @@ import {
   longDate,
   percentBadge,
   relative,
+  resetCompact,
   resetRelative,
   resetText,
   rowOf,
@@ -122,6 +124,54 @@ describe('resetText', () => {
   test('no or invalid timestamp gives no text', () => {
     expect(resetText('five_hour', undefined, now)).toBe('')
     expect(resetText('five_hour', 'nope', now)).toBe('')
+  })
+})
+
+describe('compactRelative', () => {
+  const min = 60000
+
+  test('days with hours, hours with minutes, minutes alone', () => {
+    expect(compactRelative((3 * 1440 + 20 * 60 + 9) * min)).toBe('3d 20h')
+    expect(compactRelative((60 + 52) * min)).toBe('1h 52m')
+    expect(compactRelative(45 * min)).toBe('45m')
+  })
+
+  test('below a minute, or already past', () => {
+    expect(compactRelative(30000)).toBe('<1m')
+    expect(compactRelative(-1000)).toBe('<1m')
+  })
+})
+
+describe('resetCompact', () => {
+  const now = new Date(2026, 9, 8, 16, 30).getTime()
+
+  test('the time left in its shortest form', () => {
+    expect(resetCompact(new Date(2026, 9, 8, 18, 22).toISOString(), now)).toBe('1h 52m')
+  })
+
+  test('no or invalid timestamp gives nothing', () => {
+    expect(resetCompact(undefined, now)).toBe('')
+    expect(resetCompact('nope', now)).toBe('')
+  })
+})
+
+describe('single-line view data', () => {
+  const now = new Date(2026, 9, 8, 16, 30).getTime()
+
+  test('the context gives its short title and its tokens', () => {
+    expect(contextRow(reading(30, 245000)).short).toBe('Contexto')
+    expect(contextRow(reading(30, 245000)).brief).toBe('245k')
+    expect(contextRow(reading(30)).brief).toBe('')
+  })
+
+  test('the limits give their short title and the time left', () => {
+    const at = new Date(2026, 9, 8, 18, 22).toISOString()
+
+    expect(rowOf({ kind: 'five_hour', percentUsed: 17, resetsAt: at }, now)).toMatchObject({
+      short: 'Límite 5 horas',
+      brief: '1h 52m'
+    })
+    expect(rowOf({ kind: 'seven_day', percentUsed: 26 }, now)).toMatchObject({ short: 'Semanal', brief: '' })
   })
 })
 

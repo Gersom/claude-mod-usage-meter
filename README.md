@@ -15,7 +15,7 @@ Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcenta
 
 ## Diseño
 
-En la terminal lleva un borde redondeado gris; en la app de escritorio, ninguno (el diagrama es el de la app). Un bloque por medida, separados por una línea en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto` hay un texto `▸ Categorías` que se pulsa para abrir la leyenda (`▾ Categorías`) y se vuelve a pulsar para cerrarla; por defecto está cerrada:
+En la terminal lleva un borde redondeado gris oscuro (`#4b5563`); en la app de escritorio, ninguno (el diagrama es el de la app). Un bloque por medida, separados por una línea en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto` hay un texto `▸ Categorías` que se pulsa para abrir la leyenda (`▾ Categorías`) y se vuelve a pulsar para cerrarla; por defecto está cerrada:
 
 ```
  ◆ Ventana de contexto                                 84k de 200k   42%
@@ -43,7 +43,9 @@ Con las categorías abiertas, bajo `▾ Categorías`:
 - **Leyenda:** las categorías van seguidas (`■ nombre (% ≈ tokens)`), y pasan a otra línea cuando no caben; no van en columnas. Todo el texto va en gris (`#9ca3af`), más oscuro que el normal, para que destaquen los cuadros de color; los tokens en negrita. Solo se dibuja con las categorías abiertas (el estado `expanded`, cerrado al empezar).
 - **Colores de las categorías:** por nombre: `System prompt` azul, `System tools` celeste, `MCP server instructions` naranja, `Custom agents` verde, `Memory files` amarillo, `Skills` rosa, `Messages` violeta. Una categoría que el mod no conoce toma el siguiente color de reserva. `Libre` y `Búfer` van en gris oscuro.
 - **Alto del recuadro:** la franja admite `maxRows` filas y, si el contenido es más alto, las últimas se desplazan fuera de vista (los límites de 5 horas y semanal quedaban ocultos). Por eso las líneas en blanco entre medidas se quitan cuando ni las cabeceras y barras caben con holgura. La leyenda, abierta, muestra siempre todas las categorías, así que con muchas puede desplazar fuera de vista las últimas medidas: se cierra con `▾ Categorías` o se compacta.
-- **Compactar:** el botón `[-] Compactar`, al pie, deja una sola línea por medida (título, texto de la derecha y porcentaje): sin barras, sin `▸ Categorías` ni leyenda, y sin líneas en blanco. Pasa a `[+] Expandir`, que lo deshace. Empieza expandido; las categorías conservan si estaban abiertas.
+- **Vistas y botones:** al pie, alineados a la derecha, hay dos botones; cada uno activa su vista y, pulsado de nuevo (`[+] Expandir`), vuelve a la completa. El panel empieza en la completa; las categorías conservan si estaban abiertas.
+  - `[-] Compactar`: una sola línea por medida (título, texto de la derecha y porcentaje), sin barras, sin `▸ Categorías`, sin leyenda y sin líneas en blanco.
+  - `[=] Una línea`: todo el panel en una sola línea, con títulos cortos, el porcentaje en su recuadro de color de umbral y entre paréntesis el dato breve: `Contexto 30% (245k) - Límite 5 horas 17% (1h 52m) - Semanal 26% (3d 20h)`. Si no cabe, sigue en la línea de abajo. Sin el dato (por ejemplo, sin hora de restablecimiento), se omite el paréntesis.
 - **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
 - **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Va a la derecha de la cabecera; si no cabe, pasa a una segunda línea debajo de ella.
 
@@ -88,7 +90,7 @@ usage-meter/
 │   ├── register.tsx             # hooks: session.start, session.measure, ui.render
 │   ├── format.ts                # lógica pura: barra, color, fechas, filas, categorías, leyenda, ajuste al ancho
 │   └── *.test.ts                # tests (lógica y render)
-└── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila), expanded (leyenda abierta) y compact (panel compactado)
+└── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila), expanded (leyenda abierta) y view (vista: completa, compacta o una línea)
 ```
 
 ## Limitaciones conocidas

@@ -2,7 +2,8 @@ export type UsageLimit = { kind: string; percentUsed: number; resetsAt?: string 
 /** One row of the context breakdown: `used` content fills the window, `free` is what is left, `buffer` the compaction reserve, `deferred` lies outside it. */
 export type Category = { name: string; tokens: number; kind: 'used' | 'free' | 'buffer' | 'deferred' }
 export type ContextReading = { percent: number; tokens: number | null; window: number; categories: Category[] }
-export type Usage = { context: ContextReading | null; limits: UsageLimit[] }
+export type View = 'full' | 'compact' | 'line'
+export type Usage ={ context: ContextReading | null; limits: UsageLimit[] }
 
 declare module 'claude-code' {
   interface PluginState {
@@ -12,8 +13,8 @@ declare module 'claude-code' {
       shown: Record<string, number>
       /** Whether the category legend under Contexto is open; closed until the person opens it. */
       expanded: boolean
-      /** Whether the band is folded to one line per measure, with no bars, categories or legend. */
-      compact: boolean
+      /** How much the band shows: everything, one line per measure, or all the measures on a single line. */
+      view: View
     }
   }
 }
