@@ -1,6 +1,23 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { bar, barParts, contextRow, inlineFits, level, longDate, relative, resetText, rowOf, rowsOf, shortDate, withPercent } from './format'
+import {
+  bar,
+  barParts,
+  compactTokens,
+  contextRow,
+  inlineFits,
+  level,
+  longDate,
+  relative,
+  resetText,
+  rowOf,
+  rowsOf,
+  shortDate,
+  tokensText,
+  withPercent
+} from './format'
+
+const reading = (percent: number, tokens: number | null = null, window = 200000) => ({ percent, tokens, window })
 
 describe('level', () => {
   test('green up to 60, yellow up to 80, red above 80', () => {
@@ -106,7 +123,7 @@ describe('rowsOf', () => {
 
   test('context first, then the plan windows in the order given', () => {
     const rows = rowsOf(
-      { context: 42, limits: [{ kind: 'seven_day', percentUsed: 7 }, { kind: 'spend_limit', percentUsed: 1 }] },
+      { context: reading(42), limits: [{ kind: 'seven_day', percentUsed: 7 }, { kind: 'spend_limit', percentUsed: 1 }] },
       now
     )
 
@@ -118,18 +135,44 @@ describe('rowsOf', () => {
   })
 })
 
+describe('compactTokens', () => {
+  test('plain below a thousand, k and M above', () => {
+    expect(compactTokens(850)).toBe('850')
+    expect(compactTokens(1500)).toBe('1.5k')
+    expect(compactTokens(90000)).toBe('90k')
+    expect(compactTokens(200000)).toBe('200k')
+    expect(compactTokens(1000000)).toBe('1M')
+    expect(compactTokens(1250000)).toBe('1.3M')
+  })
+})
+
+describe('tokensText', () => {
+  test('tokens used of the window', () => {
+    expect(tokensText(reading(9, 90000, 1000000))).toBe('90k de 1M')
+  })
+
+  test('no token count gives no text', () => {
+    expect(tokensText(reading(9))).toBe('')
+  })
+})
+
 describe('contextRow', () => {
   test('is colored blue and has no reset text', () => {
-    const row = contextRow(42)
+    const row = contextRow(reading(42))
 
     expect(row.accent).toBe('#60a5fa')
     expect(row.reset).toBe('')
+  })
+
+  test('carries its tokens as detail', () => {
+    expect(contextRow(reading(42, 84000)).detail).toBe('84k de 200k')
+    expect(contextRow(reading(42)).detail).toBe('')
   })
 })
 
 describe('withPercent', () => {
   test('shows another percent with its own bar, keeping the rest of the row', () => {
-    const row = contextRow(90)
+    const row = contextRow(reading(90))
     const moved = withPercent(row, 40)
 
     expect(moved.percent).toBe(40)
@@ -156,6 +199,6 @@ describe('inlineFits', () => {
   })
 
   test('a row with no reset text always fits', () => {
-    expect(inlineFits(contextRow(42), 10)).toBe(true)
+    expect(inlineFits(contextRow(reading(42)), 10)).toBe(true)
   })
 })

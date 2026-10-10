@@ -44,6 +44,7 @@ test('draws context and both plan windows as percentages', async ($, on) => {
     expect(await ui.find({ type: 'Text', text: /5 horas/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Semana/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /42%/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /84k de 200k/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Restablece en/ })).toBeDefined()
     await ui.unmount()
   }

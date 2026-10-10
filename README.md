@@ -2,14 +2,14 @@
 
 Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcentajes de uso, sin detalles:
 
-- **Contexto:** cuánto de la ventana de contexto de la sesión está usado.
+- **Contexto:** cuánto de la ventana de contexto de la sesión está usado, con los tokens al lado (`84k de 200k`).
 - **Límite de 5 horas:** porcentaje usado de la ventana de 5 horas del plan, y la fecha/hora en que se restablece.
 - **Límite semanal:** porcentaje usado de la ventana de 7 días del plan, y la fecha/hora en que se restablece.
 
 ## Comportamiento
 
 - El recuadro se actualiza solo, cada vez que cambia alguna de las medidas.
-- Muestra el porcentaje de cada medida y, en los dos límites, la fecha/hora de restablecimiento (`resetsAt`, convertida a la hora local). Sin tokens, sin costos, sin desglose por categoría.
+- Muestra el porcentaje de cada medida y, en los dos límites, la fecha/hora de restablecimiento (`resetsAt`, convertida a la hora local). En el contexto, además, los tokens usados sobre la ventana, en gris atenuado y abreviados (`k`, `M`); sin costos y sin desglose por categoría.
 - Si el plan no reporta límites (por ejemplo, una cuenta que no es de suscripción), esas medidas se omiten y queda solo el contexto.
 
 ## Diseño
@@ -19,7 +19,7 @@ Recuadro con borde y una barra por medida, con el texto de restablecimiento al l
 ```
 ╭───────────────────────────────────────────────────────────────────╮
 │ Uso                                                               │
-│ Contexto  ████░░░░░░  42%                                         │
+│ Contexto  ████░░░░░░  42%   84k de 200k                           │
 │ 5 horas   ██░░░░░░░░  23%   Restablece en 2 h 10 min (hoy 18:40)  │
 │ Semana    █░░░░░░░░░   7%   Restablece en 3 d 4 h (lun 09 de oct) │
 ╰───────────────────────────────────────────────────────────────────╯
@@ -33,12 +33,12 @@ Recuadro con borde y una barra por medida, con el texto de restablecimiento al l
 ## Tipo y fuente de datos
 
 - **Tipo:** hook (plugin de Claude Code).
-- **Evento:** `session.measure`, que entrega el contexto (`context.percent`) y las ventanas de límite (`rateLimits`, con `five_hour` y `seven_day` y su `percentUsed`).
+- **Evento:** `session.measure`, que entrega el contexto (`context.percent`, `context.tokens` y `context.window`) y las ventanas de límite (`rateLimits`, con `five_hour` y `seven_day` y su `percentUsed`).
 - **Dibujo:** hook `ui.render` sobre `AbovePrompt` (franja sobre el prompt).
 
 ## Fuera de alcance
 
-- Detalles de tokens, costos o historial de uso.
+- Costos o historial de uso. El desglose del contexto por categorías queda para la Tarea 8.
 - Alertas o bloqueos al acercarse a un límite.
 
 ## Por decidir al construirlo

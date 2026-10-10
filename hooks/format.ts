@@ -1,4 +1,4 @@
-import type { Usage, UsageLimit } from '../types'
+import type { ContextReading, Usage, UsageLimit } from '../types'
 
 export type Level = 'green' | 'yellow' | 'red'
 
@@ -10,6 +10,8 @@ export type Row = {
   accent: string
   bar: string
   reset: string
+  /** Extra text after the label, such as the context's tokens; empty when there is none. */
+  detail: string
 }
 
 export const CONTEXT_ACCENT = '#60a5fa'
@@ -98,14 +100,38 @@ export const rowOf = (limit: UsageLimit, nowMs: number): Row | null => {
     level: level(percent),
     accent: LIMIT_ACCENT,
     bar: bar(percent),
-    reset: resetText(limit.kind, limit.resetsAt, nowMs)
+    reset: resetText(limit.kind, limit.resetsAt, nowMs),
+    detail: ''
   }
 }
 
-export const contextRow = (percent: number): Row => {
-  const p = clampPercent(percent)
+/** `850`, `90k`, `1.5k`, `1M`: tokens in their shortest readable form. */
+export const compactTokens = (tokens: number) => {
+  const trim = (n: number) => String(Math.round(n * 10) / 10)
 
-  return { key: 'context', label: 'Contexto', percent: p, level: level(p), accent: CONTEXT_ACCENT, bar: bar(p), reset: '' }
+  if (tokens >= 1_000_000) return `${trim(tokens / 1_000_000)}M`
+  if (tokens >= 1000) return `${trim(tokens / 1000)}k`
+
+  return String(Math.max(0, Math.round(tokens)))
+}
+
+/** `90k de 1M`; empty when the reading has no token count. */
+export const tokensText = (context: ContextReading) =>
+  context.tokens === null ? '' : `${compactTokens(context.tokens)} de ${compactTokens(context.window)}`
+
+export const contextRow = (context: ContextReading): Row => {
+  const p = clampPercent(context.percent)
+
+  return {
+    key: 'context',
+    label: 'Contexto',
+    percent: p,
+    level: level(p),
+    accent: CONTEXT_ACCENT,
+    bar: bar(p),
+    reset: '',
+    detail: tokensText(context)
+  }
 }
 
 /** Every row the meter shows for a usage reading, in display order. */

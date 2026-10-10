@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Usage } from '../types'
+import type { ContextReading, Usage } from '../types'
 import { barParts, inlineFits, rowsOf, withPercent } from './format'
 
 const LABEL_WIDTH = 9
@@ -13,6 +13,10 @@ const EASE = 0.35
 
 const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Record<string, number>)
+
+/** The context as the meter keeps it; none until the session reports a percent. */
+const contextOf = (context: { percent?: number; tokens?: number; window: number }): ContextReading | null =>
+  context.percent === undefined ? null : { percent: context.percent, tokens: context.tokens ?? null, window: context.window }
 
 /** The running glide of each row, by key: the percent it moves toward and the timer that moves it. */
 const glides = new Map<string, { target: number; timer: { cancel: () => void } }>()
@@ -61,7 +65,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     try {
       const now = await $.session.usage()
-      const reading: Usage = { context: now.context.percent ?? null, limits: now.rateLimits }
+      const reading: Usage = { context: contextOf(now.context), limits: now.rateLimits }
 
       await update($, usage, () => reading)
       await sync($, reading)
@@ -73,7 +77,7 @@ export const register: Register = on => {
   })
 
   on('session.measure', async ($, e, next) => {
-    const next_: Usage = { context: e.context.percent ?? null, limits: e.rateLimits }
+    const next_: Usage = { context: contextOf(e.context), limits: e.rateLimits }
 
     await update($, usage, () => next_)
     await sync($, next_)
@@ -107,6 +111,7 @@ export const register: Register = on => {
           const moving = row.percent !== target.percent
           const parts = barParts(row.percent)
           const inline = inlineFits(row, columns)
+          const note = row.reset || row.detail
 
           return (
             <Box key={row.key} flexDirection="column">
@@ -121,7 +126,7 @@ export const register: Register = on => {
                 <Box width={PERCENT_WIDTH} justifyContent="flex-end">
                   <Text>{`${row.percent}%`}</Text>
                 </Box>
-                {inline && row.reset ? <Text dimColor>{`${' '.repeat(GAP)}${row.reset}`}</Text> : null}
+                {inline && note ? <Text dimColor>{`${' '.repeat(GAP)}${note}`}</Text> : null}
               </Box>
               {!inline && row.reset ? (
                 <Box>
