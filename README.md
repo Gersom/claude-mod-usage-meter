@@ -15,23 +15,27 @@ Hook para Claude Code que muestra, en un recuadro dentro del chat, solo porcenta
 
 ## Diseño
 
-Recuadro con borde y una barra por medida, con el texto de restablecimiento al lado:
+Recuadro con borde y un bloque por medida, separados por una línea en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho:
 
 ```
-╭───────────────────────────────────────────────────────────────────╮
-│ Uso                                                               │
-│ Contexto  ████░░░░░░  42%   84k de 200k                           │
-│ ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇ │
-│ ■ System prompt 4k 2%  ■ Messages 80k 40%  ■ Libre 116k 58%       │
-│ 5 horas   ██░░░░░░░░  23%   Restablece en 2 h 10 min (hoy 18:40)  │
-│ Semana    █░░░░░░░░░   7%   Restablece en 3 d 4 h (lun 09 de oct) │
-╰───────────────────────────────────────────────────────────────────╯
+╭─────────────────────────────────────────────────────────────────────────╮
+│ ◆ Contexto                                          84k de 200k   42%   │
+│ ████████████████████████████████████████████████████████████████████████│
+│ ■ System prompt   4k  2%   ■ Messages  80k 40%   ■ Libre  116k 58%      │
+│                                                                         │
+│ ◆ 5 horas                  Restablece en 2 h 10 min (hoy 18:40)   23%   │
+│ ████████████████████████████████████████████████████████████████████████│
+│                                                                         │
+│ ◆ Semana                   Restablece en 3 d 4 h (lun 09 de oct)    7%   │
+│ ████████████████████████████████████████████████████████████████████████│
+╰─────────────────────────────────────────────────────────────────────────╯
 ```
 
-- **Colores por medida:** `Contexto` en azul (`#60a5fa`); `5 horas` y `Semana` en violeta (`#a78bfa`). Las etiquetas siempre llevan su color.
-- **Barra:** en reposo, su color es el del umbral: verde hasta 60%, amarillo de 60% a 80%, rojo por encima de 80%. Al cambiar el porcentaje se anima en color de la medida y luego vuelve al del umbral. Los bloques vacíos van en gris tenue.
+- **Colores por medida:** el `◆` de `Contexto` va en azul (`#60a5fa`); el de `5 horas` y `Semana` en violeta (`#a78bfa`). La etiqueta va en negrita, sin color.
+- **Porcentaje:** recuadro con fondo del color del umbral y texto negro: verde hasta 60%, amarillo de 60% a 80%, rojo por encima de 80%.
+- **Barra:** una sola por medida, a todo el ancho; lo lleno en el color del umbral (o de la medida mientras se anima) y lo vacío en gris oscuro. En `Contexto`, la barra segmentada por categorías reemplaza a la simple. Las categorías van en una leyenda de columnas alineadas (`■ nombre tokens %`) que pasa a más filas si no cabe.
 - **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
-- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Si no cabe en la línea, pasa a una segunda línea debajo de la barra.
+- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Va a la derecha de la cabecera; si no cabe, pasa a una segunda línea debajo de ella.
 
 ## Tipo y fuente de datos
 
@@ -72,7 +76,7 @@ usage-meter/
 ├── hooks/
 │   ├── hooks.json               # apunta a register.tsx
 │   ├── register.tsx             # hooks: session.start, session.measure, ui.render
-│   ├── format.ts                # lógica pura: barra, color, fechas, filas, ajuste al ancho
+│   ├── format.ts                # lógica pura: barra, color, fechas, filas, categorías, leyenda, ajuste al ancho
 │   └── *.test.ts                # tests (lógica y render)
 └── types/index.d.ts             # contrato del estado ($.state): usage y shown (porcentaje mostrado por fila)
 ```

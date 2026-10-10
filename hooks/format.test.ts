@@ -6,8 +6,10 @@ import {
   compactTokens,
   contextRow,
   inlineFits,
+  legendRows,
   level,
   longDate,
+  percentBadge,
   relative,
   resetText,
   rowOf,
@@ -55,6 +57,20 @@ describe('barParts', () => {
     expect(barParts(42)).toEqual({ filled: '████', empty: '░░░░░░' })
     expect(barParts(0)).toEqual({ filled: '', empty: '░░░░░░░░░░' })
     expect(barParts(100)).toEqual({ filled: '██████████', empty: '' })
+  })
+
+  test('takes any width', () => {
+    expect(barParts(50, 40).filled).toHaveLength(20)
+    expect(barParts(50, 40).empty).toHaveLength(20)
+    expect(barParts(100, 7)).toEqual({ filled: '███████', empty: '' })
+  })
+})
+
+describe('percentBadge', () => {
+  test('the percent padded for its colored background', () => {
+    expect(percentBadge(42)).toBe(' 42% ')
+    expect(percentBadge(7.4)).toBe(' 7% ')
+    expect(percentBadge(140)).toBe(' 100% ')
   })
 })
 
@@ -206,6 +222,39 @@ describe('slicesOf', () => {
   })
 })
 
+describe('legendRows', () => {
+  const slices = slicesOf(
+    [
+      { name: 'System prompt', tokens: 4000, kind: 'used' },
+      { name: 'Messages', tokens: 36000, kind: 'used' },
+      { name: 'Free space', tokens: 140000, kind: 'free' },
+      { name: 'Autocompact buffer', tokens: 20000, kind: 'buffer' }
+    ],
+    40
+  )
+
+  test('lines the columns up by padding each field to the widest', () => {
+    const [row] = legendRows(slices, 200)
+
+    expect(row.map(item => item.name)).toEqual(['System prompt', 'Messages     ', 'Libre        ', 'Búfer        '])
+    expect(row.map(item => item.tokens)).toEqual(['  4k', ' 36k', '140k', ' 20k'])
+    expect(row.map(item => item.percent)).toEqual([' 2%', '18%', '70%', '10%'])
+  })
+
+  test('wraps into rows when the columns do not fit them all', () => {
+    // item: 2 + 13 + 1 + 4 + 1 + 3 = 24 wide, 3 apart
+    expect(legendRows(slices, 200)).toHaveLength(1)
+    expect(legendRows(slices, 80).map(row => row.length)).toEqual([3, 1])
+    expect(legendRows(slices, 51).map(row => row.length)).toEqual([2, 2])
+    expect(legendRows(slices, 50).map(row => row.length)).toEqual([1, 1, 1, 1])
+    expect(legendRows(slices, 10).map(row => row.length)).toEqual([1, 1, 1, 1])
+  })
+
+  test('nothing to list without slices', () => {
+    expect(legendRows([], 80)).toEqual([])
+  })
+})
+
 describe('contextRow', () => {
   test('is colored blue and has no reset text', () => {
     const row = contextRow(reading(42))
@@ -242,7 +291,7 @@ describe('inlineFits', () => {
   })
 
   test('does not fit when the reset text would overflow', () => {
-    const headWidth = 25
+    const headWidth = 15
 
     expect(inlineFits(row, headWidth + 3 + row.reset.length)).toBe(true)
     expect(inlineFits(row, headWidth + 3 + row.reset.length - 1)).toBe(false)

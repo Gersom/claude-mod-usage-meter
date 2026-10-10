@@ -2,12 +2,10 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Category, ContextReading, Usage } from '../types'
-import { barParts, compactTokens, inlineFits, rowsOf, slicesOf, withPercent } from './format'
+import { FREE_COLOR, barParts, inlineFits, legendRows, percentBadge, rowsOf, slicesOf, withPercent } from './format'
 
 const BAR_MIN = 10
-const LABEL_WIDTH = 9
-const BAR_WIDTH = 11
-const PERCENT_WIDTH = 5
+const INDENT = 2
 const GAP = 3
 const STEP_MS = 40
 const EASE = 0.35
@@ -119,59 +117,67 @@ export const register: Register = on => {
 
     const { Box, Text } = $.ui.resolve(e)
     const columns = e.props.bodyColumns - 4
-    const slices = slicesOf(current.context?.categories ?? [], Math.max(BAR_MIN, columns))
+    const width = Math.max(BAR_MIN, columns)
+    const slices = slicesOf(current.context?.categories ?? [], width)
+    const legend = legendRows(slices, columns)
 
     return (
       <Box borderStyle="round" borderColor="gray" paddingX={1} flexDirection="column">
-        <Text color="gray">Uso</Text>
-        {targets.map(target => {
+        {targets.map((target, index) => {
           const row = withPercent(target, values[target.key] ?? target.percent)
           const moving = row.percent !== target.percent
-          const parts = barParts(row.percent)
+          const parts = barParts(row.percent, width)
           const inline = inlineFits(row, columns)
           const note = row.reset || row.detail
+          const segmented = row.key === 'context' && slices.length > 0
 
           return (
-            <Box key={row.key} flexDirection="column">
-              <Box>
-                <Box width={LABEL_WIDTH}>
-                  <Text color={row.accent}>{row.label}</Text>
+            <Box key={row.key} flexDirection="column" marginTop={index > 0 ? 1 : 0}>
+              <Box justifyContent="space-between">
+                <Box>
+                  <Text color={row.accent}>{'◆ '}</Text>
+                  <Text bold>{row.label}</Text>
                 </Box>
-                <Box width={BAR_WIDTH}>
-                  <Text color={moving ? row.accent : row.level}>{parts.filled}</Text>
-                  <Text dimColor>{parts.empty}</Text>
+                <Box>
+                  {inline && note ? <Text dimColor>{`${note}${' '.repeat(GAP)}`}</Text> : null}
+                  <Text bold color="black" backgroundColor={row.level}>
+                    {percentBadge(row.percent)}
+                  </Text>
                 </Box>
-                <Box width={PERCENT_WIDTH} justifyContent="flex-end">
-                  <Text>{`${row.percent}%`}</Text>
-                </Box>
-                {inline && note ? <Text dimColor>{`${' '.repeat(GAP)}${note}`}</Text> : null}
               </Box>
               {!inline && row.reset ? (
                 <Box>
-                  <Text dimColor>{`${' '.repeat(LABEL_WIDTH)}${row.reset}`}</Text>
+                  <Text dimColor>{`${' '.repeat(INDENT)}${row.reset}`}</Text>
                 </Box>
               ) : null}
-              {row.key === 'context' && slices.length > 0 ? (
-                <Box flexDirection="column">
-                  <Box>
-                    {slices.map((slice, index) => (
-                      <Text key={index} color={slice.color}>
-                        {'█'.repeat(slice.cells)}
-                      </Text>
-                    ))}
-                  </Box>
-                  <Box flexWrap="wrap">
-                    {slices.map((slice, index) => (
-                      <Box key={index} marginRight={2}>
-                        <Text color={slice.color}>{'■ '}</Text>
-                        <Text>{`${slice.name} `}</Text>
-                        <Text bold>{compactTokens(slice.tokens)}</Text>
-                        <Text dimColor>{` ${slice.percent}%`}</Text>
-                      </Box>
-                    ))}
-                  </Box>
+              {segmented ? (
+                <Box>
+                  {slices.map((slice, at) => (
+                    <Text key={at} color={slice.color}>
+                      {'█'.repeat(slice.cells)}
+                    </Text>
+                  ))}
                 </Box>
-              ) : null}
+              ) : (
+                <Box>
+                  <Text color={moving ? row.accent : row.level}>{parts.filled}</Text>
+                  <Text color={FREE_COLOR}>{'█'.repeat(parts.empty.length)}</Text>
+                </Box>
+              )}
+              {segmented
+                ? legend.map((items, at) => (
+                    <Box key={at}>
+                      {items.map((item, column) => (
+                        <Box key={column} marginRight={column < items.length - 1 ? GAP : 0}>
+                          <Text color={item.color}>{'■ '}</Text>
+                          <Text>{item.name}</Text>
+                          <Text bold>{` ${item.tokens}`}</Text>
+                          <Text dimColor>{` ${item.percent}`}</Text>
+                        </Box>
+                      ))}
+                    </Box>
+                  ))
+                : null}
             </Box>
           )
         })}

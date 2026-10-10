@@ -32,7 +32,7 @@ export const clampPercent = (percent: number) => Math.max(0, Math.min(100, Math.
 
 export const level = (percent: number): Level => (percent > 80 ? 'red' : percent > 60 ? 'yellow' : 'green')
 
-const filledCells = (percent: number) => Math.round((clampPercent(percent) / 100) * BAR_CELLS)
+const filledCells = (percent: number, cells = BAR_CELLS) => Math.round((clampPercent(percent) / 100) * cells)
 
 export const bar = (percent: number) => {
   const filled = filledCells(percent)
@@ -40,12 +40,15 @@ export const bar = (percent: number) => {
   return '█'.repeat(filled) + '░'.repeat(BAR_CELLS - filled)
 }
 
-/** The bar split in its filled and empty cells, so each can take its own color. */
-export const barParts = (percent: number) => {
-  const filled = filledCells(percent)
+/** The bar, `cells` wide, split in its filled and empty cells so each can take its own color. */
+export const barParts = (percent: number, cells = BAR_CELLS) => {
+  const filled = filledCells(percent, cells)
 
-  return { filled: '█'.repeat(filled), empty: '░'.repeat(BAR_CELLS - filled) }
+  return { filled: '█'.repeat(filled), empty: '░'.repeat(cells - filled) }
 }
+
+/** The percent as the badge beside the label shows it: ` 42% `. */
+export const percentBadge = (percent: number) => ` ${clampPercent(percent)}% `
 
 /** `2 h 10 min`, `3 d 4 h`, `45 min`; `menos de 1 min` below a minute. */
 export const relative = (ms: number) => {
@@ -168,6 +171,37 @@ export const slicesOf = (categories: Category[], cells: number): Slice[] => {
   return slices
 }
 
+export type LegendItem = { color: string; name: string; tokens: string; percent: string }
+
+const LEGEND_GAP = 3
+
+/**
+ * The legend laid out in columns that fit `columns`, row by row, with each item's name,
+ * tokens and percent padded so the columns line up.
+ */
+export const legendRows = (slices: Slice[], columns: number): LegendItem[][] => {
+  if (slices.length === 0) return []
+
+  const tokens = slices.map(slice => compactTokens(slice.tokens))
+  const percents = slices.map(slice => `${slice.percent}%`)
+  const nameWidth = Math.max(...slices.map(slice => slice.name.length))
+  const tokensWidth = Math.max(...tokens.map(text => text.length))
+  const percentWidth = Math.max(...percents.map(text => text.length))
+  const itemWidth = 2 + nameWidth + 1 + tokensWidth + 1 + percentWidth
+  const perRow = Math.max(1, Math.floor((columns + LEGEND_GAP) / (itemWidth + LEGEND_GAP)))
+  const items = slices.map((slice, index) => ({
+    color: slice.color,
+    name: slice.name.padEnd(nameWidth),
+    tokens: tokens[index].padStart(tokensWidth),
+    percent: percents[index].padStart(percentWidth)
+  }))
+  const rows: LegendItem[][] = []
+
+  for (let start = 0; start < items.length; start += perRow) rows.push(items.slice(start, start + perRow))
+
+  return rows
+}
+
 export const contextRow = (context: ContextReading): Row => {
   const p = clampPercent(context.percent)
 
@@ -205,10 +239,10 @@ export const withPercent = (row: Row, percent: number): Row => {
   return { ...row, percent: p, bar: bar(p) }
 }
 
-/** The part of a row left of its reset text: label, bar and percent. */
-export const head = (row: Row) => `${row.label.padEnd(9)} ${row.bar} ${String(row.percent).padStart(3)}%`
+/** What the row's header line holds besides its note: marker, label and percent badge. */
+export const head = (row: Row) => `◆ ${row.label} ${percentBadge(row.percent)}`
 
-/** Whether the reset text fits on the row's line within `columns`. */
+/** Whether the reset text fits on the row's header line within `columns`. */
 export const inlineFits = (row: Row, columns: number) => {
   if (!row.reset) return true
 
