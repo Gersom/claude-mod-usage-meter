@@ -14,7 +14,7 @@ export type Row = {
   detail: string
   /** The part of the note (`reset` or `detail`) drawn in the title's color, not dim: the tokens, the time left. */
   strong: string
-  /** The short title the single-line view uses: `Contexto`, `Límite 5 horas`, `Semanal`. */
+  /** The short title the single-line view uses: `Contexto`, `Límite 5h`, `Semanal`. */
   short: string
   /** What the single-line view shows in parentheses: the tokens (`245k`) or the time left (`1h 52m`); empty when unknown. */
   brief: string

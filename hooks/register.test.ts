@@ -172,7 +172,7 @@ test('puts everything on a single line and unfolds again', async ($, on) => {
 
   expect(await ui.find({ type: 'Button', key: 'line', text: /Expandir/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /Límite 5 horas/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Límite 5h/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Semanal/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /\(84k\)/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /\(2h 0m\)/ })).toBeDefined()

@@ -142,7 +142,7 @@ describe('single-line view data', () => {
     const at = new Date(2026, 9, 8, 18, 22).toISOString()
 
     expect(rowOf({ kind: 'five_hour', percentUsed: 17, resetsAt: at }, now, es)).toMatchObject({
-      short: 'Límite 5 horas',
+      short: 'Límite 5h',
       brief: '1h 52m'
     })
     expect(rowOf({ kind: 'seven_day', percentUsed: 26 }, now, es)).toMatchObject({ short: 'Semanal', brief: '' })

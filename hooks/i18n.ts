@@ -34,7 +34,7 @@ export const TEXTS: Record<Lang, Texts> = {
     context: 'Ventana de contexto',
     contextShort: 'Contexto',
     fiveHour: 'Límite de 5 horas',
-    fiveHourShort: 'Límite 5 horas',
+    fiveHourShort: 'Límite 5h',
     sevenDay: 'Límite semanal',
     sevenDayShort: 'Semanal',
     free: 'Libre',
