@@ -197,20 +197,25 @@ export const register: Register = on => {
 
     if (view === 'line') {
       return (
-        <Box {...frame} paddingX={1} flexDirection="column">
-          <Box flexWrap="wrap">
-            {rows.map(({ row }, index) => (
-              <Box key={row.key}>
-                {index > 0 ? <Text dimColor>{' - '}</Text> : null}
-                <Text bold>{`${row.short} `}</Text>
-                <Text bold color="black" backgroundColor={row.level}>
-                  {percentBadge(row.percent)}
+        <Box {...frame} paddingX={1}>
+          {/* One line, the buttons at its right end: what does not fit is cut off, never wrapped. */}
+          <Box flexGrow={1} flexShrink={1}>
+            <Text wrap="truncate-end">
+              {rows.map(({ row }, index) => (
+                <Text key={row.key}>
+                  {index > 0 ? <Text dimColor>{' · '}</Text> : null}
+                  <Text bold>{`${row.short} `}</Text>
+                  <Text bold color="black" backgroundColor={row.level}>
+                    {percentBadge(row.percent)}
+                  </Text>
+                  {row.brief ? <Text dimColor>{` (${row.brief})`}</Text> : null}
                 </Text>
-                {row.brief ? <Text dimColor>{` (${row.brief})`}</Text> : null}
-              </Box>
-            ))}
+              ))}
+            </Text>
           </Box>
-          {controls}
+          <Box flexShrink={0} marginLeft={2}>
+            {controls}
+          </Box>
         </Box>
       )
     }
