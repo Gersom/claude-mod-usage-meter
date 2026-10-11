@@ -29,6 +29,9 @@ const expanded = atom({ plugin: 'usage-meter', key: 'expanded' } as const, false
 const viewMode = atom({ plugin: 'usage-meter', key: 'view' } as const, 'full' as View)
 const langMode = atom({ plugin: 'usage-meter', key: 'lang' } as const, null as Lang | null)
 
+/** The view the button rotates to from each one. */
+const NEXT_VIEW: Record<View, View> = { full: 'compact', compact: 'line', line: 'full' }
+
 /** Whether what another hook drew has nothing to show: no text, no border, nothing inside. */
 const isEmpty = (node: RenderNode | null | undefined): boolean => {
   if (node === null || node === undefined) return true
@@ -207,27 +210,17 @@ export const register: Register = on => {
 
     const frame = { borderStyle: 'round' as const, borderColor: BORDER_COLOR }
 
-    // Each button toggles its own view and, pressed again, goes back to the full one.
+    // One button rotates the views (full, compact, line, full) and names the one it will switch to.
     const controls = (
       <Box justifyContent="flex-end">
         <Button
-          key="compact"
+          key="view"
           plain
           dimColor
-          onPress={() => void update($, viewMode, value => (value === 'compact' ? 'full' : 'compact'))}
+          onPress={() => void update($, viewMode, value => NEXT_VIEW[value])}
         >
-          {view === 'compact' ? `[+] ${t.expand}` : `[-] ${t.compact}`}
+          {view === 'full' ? `[-] ${t.compact}` : view === 'compact' ? `[=] ${t.oneLine}` : `[+] ${t.expand}`}
         </Button>
-        <Box marginLeft={2}>
-          <Button
-            key="line"
-            plain
-            dimColor
-            onPress={() => void update($, viewMode, value => (value === 'line' ? 'full' : 'line'))}
-          >
-            {view === 'line' ? `[+] ${t.expand}` : `[=] ${t.oneLine}`}
-          </Button>
-        </Box>
         <Box marginLeft={2}>
           <Button
             key="lang"

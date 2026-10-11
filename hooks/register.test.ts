@@ -128,19 +128,20 @@ test('folds to one line per measure and unfolds again', async ($, on) => {
 
   const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
 
-  expect(await ui.find({ type: 'Button', key: 'compact', text: /Compactar/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'view', text: /Compactar/ })).toBeDefined()
   expect(await ui.find({ type: 'Button', key: 'categories' })).toBeDefined()
 
   await ui.press({ key: 'categories' })
-  await ui.press({ key: 'compact' })
+  await ui.press({ key: 'view' })
 
-  expect(await ui.find({ type: 'Button', key: 'compact', text: /Expandir/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'view', text: /Una línea/ })).toBeDefined()
   expect(await ui.find({ type: 'Button', key: 'categories' })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Límite de 5 horas/ })).toBeDefined()
 
-  await ui.press({ key: 'compact' })
+  await ui.press({ key: 'view' })
+  await ui.press({ key: 'view' })
 
   expect(await ui.find({ type: 'Button', key: 'categories' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /System prompt/ })).toBeDefined()
@@ -166,11 +167,12 @@ test('puts everything on a single line and unfolds again', async ($, on) => {
 
   const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
 
-  expect(await ui.find({ type: 'Button', key: 'line', text: /Una línea/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'view', text: /Compactar/ })).toBeDefined()
 
-  await ui.press({ key: 'line' })
+  await ui.press({ key: 'view' })
+  await ui.press({ key: 'view' })
 
-  expect(await ui.find({ type: 'Button', key: 'line', text: /Expandir/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'view', text: /Expandir/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Límite 5h/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Semanal/ })).toBeDefined()
@@ -178,9 +180,44 @@ test('puts everything on a single line and unfolds again', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /\(2h 0m\)/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
 
-  await ui.press({ key: 'line' })
+  await ui.press({ key: 'view' })
 
   expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rotates full, compact, line and full again with a single button', async ($, on) => {
+  on('ui.render', () => engineBand)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  mock.clock(on, { now: Date.now() })
+
+  await $.session.measure({
+    context: window,
+    rateLimits: [{ kind: 'five_hour', percentUsed: 23 }],
+    changed: ['context', 'rateLimits']
+  })
+
+  const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
+
+  expect(await ui.find({ type: 'Button', key: 'view', text: /\[-\] Compact/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'lang', text: /EN/ })).toBeDefined()
+
+  await ui.press({ key: 'view' })
+
+  expect(await ui.find({ type: 'Button', key: 'view', text: /\[=\] One line/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeDefined()
+
+  await ui.press({ key: 'view' })
+
+  expect(await ui.find({ type: 'Button', key: 'view', text: /\[\+\] Expand/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeUndefined()
+
+  await ui.press({ key: 'view' })
+
+  expect(await ui.find({ type: 'Button', key: 'view', text: /\[-\] Compact/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'compact' })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', key: 'line' })).toBeUndefined()
   await ui.unmount()
 })
 
@@ -260,7 +297,7 @@ test('speaks English when the settings name no language, or one the panel does n
   expect(await ui.find({ type: 'Text', text: /Context window/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Weekly limit/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Button', key: 'compact', text: /Compact/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'view', text: /Compact/ })).toBeDefined()
   expect(await ui.find({ type: 'Button', key: 'lang', text: /EN/ })).toBeDefined()
   await ui.unmount()
 })
