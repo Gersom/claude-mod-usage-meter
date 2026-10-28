@@ -256,7 +256,7 @@ export const register: Register = on => {
   // The band is one line: the name, the three percentages and the two buttons. The detail is in the pane, which only the button or the
   // command opens: a pane the mod opened by itself would not be placed under 144 columns, so nothing is ever opened unasked.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    // What other hooks draw in the band (cache-watch's) stays; the meter goes under it.
+    // What other hooks draw in the band (cache-watch's) stays; the meter goes under it, so the repo's mods end up together at the prompt.
     const below = await next(e)
     const current = await read($, usage)
 
