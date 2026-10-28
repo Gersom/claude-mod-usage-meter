@@ -6,7 +6,7 @@
     {
       "name": "usage-meter",
       "source": "./",
-      "description": "Recuadro sobre el prompt con el porcentaje de contexto y de los límites de 5 horas y semanal."
+      "description": "Banda de una línea sobre el prompt con el porcentaje de contexto y de los límites de 5 horas y semanal, y un panel lateral con el detalle."
     }
   ]
 }
