@@ -18,7 +18,7 @@ Hook para Claude Code que muestra el uso de la sesión y del plan en dos partes:
 
 ### Banda sobre el prompt
 
-Una sola línea con borde redondeado gris oscuro (`#4b5563`) en todas las superficies (terminal y app de escritorio): el nombre fijo `Usage Meter:`, las tres medidas con su título corto y el porcentaje, y al final los botones `[Abrir]` (o `[Cerrar]`) e idioma:
+Una sola línea, sin borde: el nombre fijo `Usage Meter:`, las tres medidas con su título corto y el porcentaje, y al final los botones `[Abrir]` (o `[Cerrar]`) e idioma:
 
 ```
 ╭──────────────────────────────────────────────────────────────────────────╮

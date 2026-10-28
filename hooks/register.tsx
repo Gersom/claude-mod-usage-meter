@@ -22,7 +22,6 @@ const PANE_ID = 'usage-meter'
 /** The columns and body rows the pane asks for: three measures with their bars, the legend and the blank lines between them. */
 const PANE_COLUMNS = 60
 const PANE_ROWS = 22
-const BORDER_COLOR = '#4b5563'
 const STEP_MS = 40
 const EASE = 0.35
 
@@ -280,7 +279,7 @@ export const register: Register = on => {
     const rows = targets.map(target => withPercent(target, values[target.key] ?? target.percent))
 
     const meter = (
-      <Box borderStyle="round" borderColor={BORDER_COLOR} paddingX={1}>
+      <Box>
         {/* One line, the buttons at its right end: what does not fit is cut off, never wrapped. */}
         <Box flexGrow={1} flexShrink={1}>
           <Text wrap="truncate-end">
