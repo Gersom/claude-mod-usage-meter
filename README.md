@@ -33,37 +33,37 @@ Una sola línea con borde redondeado gris oscuro (`#4b5563`) en todas las superf
 
 ### Panel lateral
 
-Siempre la vista completa. No lleva borde propio ni botones. Un bloque por medida, separados por dos líneas en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto`, los tokens van siempre en una línea debajo del título, y tras la barra segmentada, con una línea en blanco de por medio, la leyenda de categorías, siempre abierta. En el ancho de 60 columnas el texto de restablecimiento no cabe junto a la etiqueta y pasa a una línea debajo:
+Siempre la vista completa. No lleva borde propio ni botones. Un bloque por medida, separados por dos líneas en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. El subtítulo de cada medida (los tokens del contexto, el texto de restablecimiento de los límites) va siempre en una línea debajo de la barra, pegado a la izquierda y sin sangría. Bajo el subtítulo de `Contexto`, con una línea en blanco de por medio, va la leyenda de categorías, siempre abierta:
 
 ```
 ◆ Ventana de contexto                                   42%
-  84k de 200k
 ████████████████████████████████████████████████████████████
+84k de 200k
 
 ■ System prompt (2% ≈ 4k)  ■ Messages (40% ≈ 80k)
 ■ Libre (58% ≈ 116k)
 
 
 ◆ Límite de 5 horas                                     23%
-  Restablece en 2 h 10 min (hoy 18:40)
 ████████████████████████████████████████████████████████████
+Restablece en 2 h 10 min (hoy 18:40)
 
 
 ◆ Límite semanal                                         7%
-  Restablece en 3 d 4 h (lun 09 de oct)
 ████████████████████████████████████████████████████████████
+Restablece en 3 d 4 h (lun 09 de oct)
 ```
 
 - **Tamaño:** pide 60 columnas y 22 filas (`PANE_COLUMNS`, `PANE_ROWS`); el ancho del contenido es el que da el motor (`bodyColumns`).
 - **Títulos:** `Ventana de contexto`, `Límite de 5 horas` y `Límite semanal`.
 - **Colores por medida:** el `◆` de `Ventana de contexto` va en azul (`#60a5fa`); el de los dos límites en violeta (`#a78bfa`). La etiqueta va en negrita, sin color.
-- **Texto de la derecha:** en gris atenuado, salvo el dato principal, que va en el blanco del título (sin negrita): los tokens usados (`84k` de `84k de 200k`) y el tiempo que falta (`2 h 10 min`, `3 d 4 h`).
+- **Subtítulo:** debajo de la barra, en gris atenuado, salvo el dato principal, que va en el blanco del título (sin negrita): los tokens usados (`84k` de `84k de 200k`) y el tiempo que falta (`2 h 10 min`, `3 d 4 h`).
 - **Barra:** una sola por medida, a todo el ancho; lo lleno en el color del umbral (o de la medida mientras se anima) y lo vacío en gris oscuro. En `Contexto`, la barra segmentada por categorías reemplaza a la simple. Las barras son cajas que se reparten la línea por proporción (no texto repetido), así que llenan el ancho real sin partirse en dos líneas.
 - **Leyenda:** las categorías van seguidas (`■ nombre (% ≈ tokens)`), y pasan a otra línea cuando no caben; no van en columnas. Todo el texto va en gris (`#9ca3af`), más oscuro que el normal, para que destaquen los cuadros de color; los tokens en negrita.
 - **Colores de las categorías:** por nombre: `System prompt` azul, `System tools` celeste, `MCP server instructions` naranja, `Custom agents` verde, `Memory files` amarillo, `Skills` rosa, `Messages` violeta. Una categoría que el mod no conoce toma el siguiente color de reserva. `Libre` y `Búfer` van en gris oscuro.
 - **Sin lecturas:** si se abre antes de la primera medición, dice `Aún no hay lecturas.` (`No readings yet.`).
 - **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
-- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Va a la derecha de la cabecera; si no cabe, pasa a una segunda línea debajo de ella.
+- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Va como subtítulo, debajo de la barra.
 
 ### Vistas y botones
 
@@ -175,7 +175,7 @@ usage-meter/
 ## Limitaciones conocidas
 
 - El tiempo relativo se recalcula en cada medición (después de cada turno), no segundo a segundo.
-- Terminales angostas: en la banda, si no caben las tres medidas, se corta el final de su texto con `…` (los botones se conservan); en el panel, si el texto de restablecimiento no cabe en la línea de la cabecera, pasa a una segunda línea.
+- Terminales angostas: en la banda, si no caben las tres medidas, se corta el final de su texto con `…` (los botones se conservan).
 - El panel solo se coloca si la superficie admite paneles; si no, el botón y el comando avisan con el motivo. Como el mod nunca lo abre solo, hay que pulsar `[Abrir]` o usar `/usage-meter` en cada sesión: el estado `paneOpen` sigue al panel real, pero el mod no lo reabre al empezar.
 - El alto del panel (18 filas) cubre las tres medidas con una leyenda de hasta unas cinco líneas; con más categorías o un ancho menor, las últimas líneas pueden quedar fuera de vista.
 - Los tests no cubren la animación ni el dibujo real del panel (solo su contenido y la apertura y el cierre con un motor simulado); el panel lateral no se ha probado a mano en una sesión interactiva.

@@ -248,13 +248,3 @@ export const withPercent = (row: Row, percent: number): Row => {
 
   return { ...row, percent: p }
 }
-
-/** What the row's header line holds besides its note: marker, label and percent badge. */
-export const head = (row: Row) => `◆ ${row.label} ${percentBadge(row.percent)}`
-
-/** Whether the reset text fits on the row's header line within `columns`. */
-export const inlineFits = (row: Row, columns: number) => {
-  if (!row.reset) return true
-
-  return head(row).length + 3 + row.reset.length <= columns
-}

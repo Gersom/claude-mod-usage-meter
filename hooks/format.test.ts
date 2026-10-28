@@ -3,7 +3,6 @@ import { describe, expect, test } from 'claude-code/testing'
 import {
   compactTokens,
   contextRow,
-  inlineFits,
   legendLines,
   level,
   longDate,
@@ -323,26 +322,5 @@ describe('withPercent', () => {
     expect(moved.percent).toBe(40)
     expect(moved.label).toBe('Ventana de contexto')
     expect(moved.level).toBe('red')
-  })
-})
-
-describe('inlineFits', () => {
-  const now = new Date(2026, 9, 8, 16, 30).getTime()
-  const at = new Date(2026, 9, 8, 18, 40).toISOString()
-  const row = rowOf({ kind: 'five_hour', percentUsed: 23, resetsAt: at }, now, es)!
-
-  test('fits on the line when the terminal is wide enough', () => {
-    expect(inlineFits(row, 80)).toBe(true)
-  })
-
-  test('does not fit when the reset text would overflow', () => {
-    const headWidth = 25
-
-    expect(inlineFits(row, headWidth + 3 + row.reset.length)).toBe(true)
-    expect(inlineFits(row, headWidth + 3 + row.reset.length - 1)).toBe(false)
-  })
-
-  test('a row with no reset text always fits', () => {
-    expect(inlineFits(contextRow(reading(42), es), 10)).toBe(true)
   })
 })

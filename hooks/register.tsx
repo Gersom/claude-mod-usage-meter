@@ -8,7 +8,6 @@ import {
   FREE_COLOR,
   LEGEND_GAP,
   LEGEND_TEXT,
-  inlineFits,
   legendLines,
   percentBadge,
   rowsOf,
@@ -24,8 +23,6 @@ const PANE_ID = 'usage-meter'
 const PANE_COLUMNS = 60
 const PANE_ROWS = 22
 const BORDER_COLOR = '#4b5563'
-const INDENT = 2
-const GAP = 3
 const STEP_MS = 40
 const EASE = 0.35
 
@@ -361,12 +358,9 @@ export const register: Register = on => {
       <Box flexDirection="column">
         {targets.map((target, index) => {
           const row = withPercent(target, values[target.key] ?? target.percent)
-          const inline = inlineFits(row, columns)
           const moving = row.percent !== target.percent
           const note = row.reset || row.detail
           const segmented = row.key === 'context' && slices.length > 0
-          // The context's tokens always sit on their own line under the title; a limit's reset note only when it does not fit beside it.
-          const below = row.key === 'context' ? Boolean(row.detail) : !inline && Boolean(row.reset)
 
           return (
             <Box key={row.key} flexDirection="column" marginTop={index > 0 ? 2 : 0}>
@@ -376,13 +370,11 @@ export const register: Register = on => {
                   <Text bold>{row.label}</Text>
                 </Box>
                 <Box>
-                  {!below && note ? noteOf(row, '', ' '.repeat(GAP)) : null}
                   <Text bold color="black" backgroundColor={row.level}>
                     {percentBadge(row.percent)}
                   </Text>
                 </Box>
               </Box>
-              {below ? noteOf(row, ' '.repeat(INDENT), '') : null}
               {/* The bars are Boxes that share the line by flex, so they fill it however wide it really is. */}
               {segmented ? (
                 <Box height={1}>
@@ -402,6 +394,8 @@ export const register: Register = on => {
                   <Box flexGrow={100 - row.percent} flexShrink={0} backgroundColor={FREE_COLOR} />
                 </Box>
               )}
+              {/* The subtitle (tokens, time left) sits under the bar, flush left. */}
+              {note ? noteOf(row, '', '') : null}
               {segmented
                 ? legend.map((items, at) => (
                     <Box key={at} marginTop={at === 0 ? 1 : 0}>
