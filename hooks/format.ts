@@ -64,7 +64,7 @@ export const shortDate = (at: Date, now: Date, t: Texts) => {
 
 /** Weekly window: `lun 09 de oct` (`Mon, Oct 09`), no time. */
 export const longDate = (at: Date, t: Texts) =>
-  t.weekDate(t.weekdays[at.getDay()], pad2(at.getDate()), t.months[at.getMonth()])
+  t.weekDate(t.weekdays[at.getDay()] ?? '', pad2(at.getDate()), t.months[at.getMonth()] ?? '')
 
 /** Milliseconds until the window resets; null without a valid timestamp. */
 const msUntil = (resetsAt: string | undefined, nowMs: number) => {
@@ -177,7 +177,7 @@ export const slicesOf = (categories: Category[], t: Texts): Slice[] => {
         ? FREE_COLOR
         : category.kind === 'buffer'
           ? BUFFER_COLOR
-          : (NAME_COLORS[category.name] ?? PALETTE[next++ % PALETTE.length])
+          : (NAME_COLORS[category.name] ?? PALETTE[next++ % PALETTE.length]!)
   }))
 }
 

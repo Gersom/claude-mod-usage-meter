@@ -379,7 +379,7 @@ export const register: Register = on => {
                 <Box height={1}>
                   {slices.map((slice, at) => (
                     <Box
-                      key={at}
+                      key={`${at}`}
                       flexGrow={Math.round((slice.tokens / total) * 1000)}
                       flexShrink={0}
                       minWidth={slice.kind === 'used' && slice.tokens > 0 ? 1 : 0}
@@ -397,9 +397,9 @@ export const register: Register = on => {
               {note ? noteOf(row, '', '') : null}
               {segmented
                 ? legend.map((items, at) => (
-                    <Box key={at} marginTop={at === 0 ? 1 : 0}>
+                    <Box key={`${at}`} marginTop={at === 0 ? 1 : 0}>
                       {items.map((item, column) => (
-                        <Box key={column} marginRight={column < items.length - 1 ? LEGEND_GAP : 0}>
+                        <Box key={`${column}`} marginRight={column < items.length - 1 ? LEGEND_GAP : 0}>
                           <Text color={item.color}>{'■ '}</Text>
                           <Text color={LEGEND_TEXT}>{`${item.name} (${item.percent} ≈ `}</Text>
                           <Text color={LEGEND_TEXT} bold>

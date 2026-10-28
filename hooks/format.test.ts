@@ -222,10 +222,10 @@ describe('slicesOf', () => {
   test('free and buffer have their own colors, used ones are colored by name', () => {
     const slices = slicesOf(categories, es)
 
-    expect(slices[0].color).toBe('#60a5fa')
-    expect(slices[1].color).toBe('#a78bfa')
-    expect(slices[2].color).toBe('#2f3442')
-    expect(slices[3].color).toBe('#4b5263')
+    expect(slices[0]?.color).toBe('#60a5fa')
+    expect(slices[1]?.color).toBe('#a78bfa')
+    expect(slices[2]?.color).toBe('#2f3442')
+    expect(slices[3]?.color).toBe('#4b5263')
   })
 
   test('Messages and MCP server instructions have swapped colors', () => {
@@ -238,8 +238,8 @@ describe('slicesOf', () => {
     es
   )
 
-    expect(slices[0].color).toBe('#fb923c')
-    expect(slices[1].color).toBe('#a78bfa')
+    expect(slices[0]?.color).toBe('#fb923c')
+    expect(slices[1]?.color).toBe('#a78bfa')
   })
 
   test('a category the meter does not know takes the next fallback color', () => {
@@ -252,8 +252,8 @@ describe('slicesOf', () => {
     es
   )
 
-    expect(slices[0].color).toBe('#94a3b8')
-    expect(slices[1].color).toBe('#2dd4bf')
+    expect(slices[0]?.color).toBe('#94a3b8')
+    expect(slices[1]?.color).toBe('#2dd4bf')
   })
 
   test('nothing to draw without tokens', () => {
@@ -278,9 +278,9 @@ describe('legendLines', () => {
   test('each item carries its name, tokens and percent as they are, unpadded', () => {
     const lines = legendLines(slices, 200)
 
-    expect(lines[0].map(item => item.name)).toEqual(['System prompt', 'Messages', 'Libre', 'Búfer'])
-    expect(lines[0].map(item => item.tokens)).toEqual(['4k', '36k', '140k', '20k'])
-    expect(lines[0].map(item => item.percent)).toEqual(['2%', '18%', '70%', '10%'])
+    expect(lines[0]?.map(item => item.name)).toEqual(['System prompt', 'Messages', 'Libre', 'Búfer'])
+    expect(lines[0]?.map(item => item.tokens)).toEqual(['4k', '36k', '140k', '20k'])
+    expect(lines[0]?.map(item => item.percent)).toEqual(['2%', '18%', '70%', '10%'])
   })
 
   test('flows into lines as the width allows, never leaving an item out', () => {
