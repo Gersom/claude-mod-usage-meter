@@ -33,24 +33,28 @@ Una sola línea con borde redondeado gris oscuro (`#4b5563`) en todas las superf
 
 ### Panel lateral
 
-Siempre la vista completa. No lleva borde propio ni botones. Un bloque por medida, separados por una línea en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto`, la barra segmentada y la leyenda de categorías, siempre abierta. En el ancho de 60 columnas el texto de restablecimiento no cabe junto a la etiqueta y pasa a una línea debajo:
+Siempre la vista completa. No lleva borde propio ni botones. Un bloque por medida, separados por dos líneas en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. Bajo `Contexto`, los tokens van siempre en una línea debajo del título, y tras la barra segmentada, con una línea en blanco de por medio, la leyenda de categorías, siempre abierta. En el ancho de 60 columnas el texto de restablecimiento no cabe junto a la etiqueta y pasa a una línea debajo:
 
 ```
-◆ Ventana de contexto                     84k de 200k   42%
+◆ Ventana de contexto                                   42%
+  84k de 200k
 ████████████████████████████████████████████████████████████
+
 ■ System prompt (2% ≈ 4k)  ■ Messages (40% ≈ 80k)
 ■ Libre (58% ≈ 116k)
+
 
 ◆ Límite de 5 horas                                     23%
   Restablece en 2 h 10 min (hoy 18:40)
 ████████████████████████████████████████████████████████████
+
 
 ◆ Límite semanal                                         7%
   Restablece en 3 d 4 h (lun 09 de oct)
 ████████████████████████████████████████████████████████████
 ```
 
-- **Tamaño:** pide 60 columnas y 18 filas (`PANE_COLUMNS`, `PANE_ROWS`); el ancho del contenido es el que da el motor (`bodyColumns`).
+- **Tamaño:** pide 60 columnas y 22 filas (`PANE_COLUMNS`, `PANE_ROWS`); el ancho del contenido es el que da el motor (`bodyColumns`).
 - **Títulos:** `Ventana de contexto`, `Límite de 5 horas` y `Límite semanal`.
 - **Colores por medida:** el `◆` de `Ventana de contexto` va en azul (`#60a5fa`); el de los dos límites en violeta (`#a78bfa`). La etiqueta va en negrita, sin color.
 - **Texto de la derecha:** en gris atenuado, salvo el dato principal, que va en el blanco del título (sin negrita): los tokens usados (`84k` de `84k de 200k`) y el tiempo que falta (`2 h 10 min`, `3 d 4 h`).

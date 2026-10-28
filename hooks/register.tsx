@@ -22,7 +22,7 @@ const NAME = 'Usage Meter'
 const PANE_ID = 'usage-meter'
 /** The columns and body rows the pane asks for: three measures with their bars, the legend and the blank lines between them. */
 const PANE_COLUMNS = 60
-const PANE_ROWS = 18
+const PANE_ROWS = 22
 const BORDER_COLOR = '#4b5563'
 const INDENT = 2
 const GAP = 3
@@ -365,24 +365,24 @@ export const register: Register = on => {
           const moving = row.percent !== target.percent
           const note = row.reset || row.detail
           const segmented = row.key === 'context' && slices.length > 0
+          // The context's tokens always sit on their own line under the title; a limit's reset note only when it does not fit beside it.
+          const below = row.key === 'context' ? Boolean(row.detail) : !inline && Boolean(row.reset)
 
           return (
-            <Box key={row.key} flexDirection="column" marginTop={index > 0 ? 1 : 0}>
+            <Box key={row.key} flexDirection="column" marginTop={index > 0 ? 2 : 0}>
               <Box justifyContent="space-between">
                 <Box>
                   <Text color={row.accent}>{'◆ '}</Text>
                   <Text bold>{row.label}</Text>
                 </Box>
                 <Box>
-                  {inline && note ? noteOf(row, '', ' '.repeat(GAP)) : null}
+                  {!below && note ? noteOf(row, '', ' '.repeat(GAP)) : null}
                   <Text bold color="black" backgroundColor={row.level}>
                     {percentBadge(row.percent)}
                   </Text>
                 </Box>
               </Box>
-              {!inline && row.reset ? (
-                noteOf(row, ' '.repeat(INDENT), '')
-              ) : null}
+              {below ? noteOf(row, ' '.repeat(INDENT), '') : null}
               {/* The bars are Boxes that share the line by flex, so they fill it however wide it really is. */}
               {segmented ? (
                 <Box height={1}>
@@ -404,7 +404,7 @@ export const register: Register = on => {
               )}
               {segmented
                 ? legend.map((items, at) => (
-                    <Box key={at}>
+                    <Box key={at} marginTop={at === 0 ? 1 : 0}>
                       {items.map((item, column) => (
                         <Box key={column} marginRight={column < items.length - 1 ? LEGEND_GAP : 0}>
                           <Text color={item.color}>{'■ '}</Text>

@@ -231,7 +231,7 @@ test('the button opens the pane and closes it, and its label follows', async ($,
 
   await ui.press({ key: 'pane' })
   expect(calls).toEqual(['open usage-meter'])
-  expect(opened[0]).toMatchObject({ id: 'usage-meter', title: 'Usage Meter', rows: 18, columns: 60 })
+  expect(opened[0]).toMatchObject({ id: 'usage-meter', title: 'Usage Meter', rows: 22, columns: 60 })
   expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[Cerrar\]$/ })).toBeDefined()
 
   await ui.press({ key: 'pane' })
