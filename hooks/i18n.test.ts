@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { compactRelative, contextRow, longDate, relative, resetText, rowOf, shortDate, slicesOf, tokensText } from './format'
+import { contextRow, longDate, relative, resetText, rowOf, shortDate, slicesOf, tokensText } from './format'
 import { DEFAULT_LANG, TEXTS, detectLang, otherLang, textsOf } from './i18n'
 
 const es = TEXTS.es
@@ -51,13 +51,25 @@ describe('textsOf and otherLang', () => {
   })
 })
 
+describe('the pane texts', () => {
+  test('the button, in each language', () => {
+    expect([es.open, es.close]).toEqual(['Abrir', 'Cerrar'])
+    expect([en.open, en.close]).toEqual(['Open', 'Close'])
+  })
+
+  test('the reason a surface gives is added when there is one', () => {
+    expect(es.paneUnavailable('sin paneles')).toBe('El panel no está disponible aquí: sin paneles')
+    expect(en.paneUnavailable('no panes here')).toBe('The pane is not available here: no panes here')
+    expect(en.paneUnavailable(null)).toBe('The pane is not available here')
+  })
+})
+
 describe('the same figures in English', () => {
   const now = new Date(2026, 9, 8, 16, 30).getTime()
 
   test('time left', () => {
     expect(relative(0, en)).toBe('less than 1 min')
     expect(relative((2 * 60 + 10) * 60000, en)).toBe('2 h 10 min')
-    expect(compactRelative((3 * 1440 + 20 * 60) * 60000)).toBe('3d 20h')
   })
 
   test('dates', () => {
@@ -78,8 +90,7 @@ describe('the same figures in English', () => {
 
     expect(rowOf({ kind: 'five_hour', percentUsed: 17, resetsAt: at }, now, en)).toMatchObject({
       label: '5-hour limit',
-      short: '5-hour limit',
-      brief: '2h 10m'
+      short: '5-hour limit'
     })
     expect(rowOf({ kind: 'seven_day', percentUsed: 26 }, now, en)).toMatchObject({ label: 'Weekly limit', short: 'Weekly' })
 

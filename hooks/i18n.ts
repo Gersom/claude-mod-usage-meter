@@ -11,10 +11,17 @@ export type Texts = {
   sevenDayShort: string
   free: string
   buffer: string
-  categories: string
-  compact: string
-  expand: string
-  oneLine: string
+  /** The band's button: opens the pane, or closes it when it is open. */
+  open: string
+  close: string
+  /** The pane when there is no reading yet. */
+  nothing: string
+  paneUnavailable: (reason: string | null) => string
+  commandDescription: string
+  commandUsage: string
+  /** What `/usage-meter` answers once the pane is open, and once it is closed. */
+  paneOpened: string
+  paneClosed: string
   /** Between the tokens used and the window: `84k de 200k`. */
   of: string
   today: string
@@ -39,10 +46,14 @@ export const TEXTS: Record<Lang, Texts> = {
     sevenDayShort: 'Semanal',
     free: 'Libre',
     buffer: 'Búfer',
-    categories: 'Categorías',
-    compact: 'Compactar',
-    expand: 'Expandir',
-    oneLine: 'Una línea',
+    open: 'Abrir',
+    close: 'Cerrar',
+    nothing: 'Aún no hay lecturas.',
+    paneUnavailable: reason => `El panel no está disponible aquí${reason ? `: ${reason}` : ''}`,
+    commandDescription: 'Abre o cierra el panel de Usage Meter.',
+    commandUsage: 'Uso: /usage-meter [open|close]. Sin argumento, alterna el panel.',
+    paneOpened: 'Panel de Usage Meter abierto',
+    paneClosed: 'Panel de Usage Meter cerrado',
     of: 'de',
     today: 'hoy',
     lessThanMinute: 'menos de 1 min',
@@ -61,10 +72,14 @@ export const TEXTS: Record<Lang, Texts> = {
     sevenDayShort: 'Weekly',
     free: 'Free',
     buffer: 'Buffer',
-    categories: 'Categories',
-    compact: 'Compact',
-    expand: 'Expand',
-    oneLine: 'One line',
+    open: 'Open',
+    close: 'Close',
+    nothing: 'No readings yet.',
+    paneUnavailable: reason => `The pane is not available here${reason ? `: ${reason}` : ''}`,
+    commandDescription: 'Open or close the Usage Meter pane.',
+    commandUsage: 'Usage: /usage-meter [open|close]. With no argument, it toggles the pane.',
+    paneOpened: 'Usage Meter pane opened',
+    paneClosed: 'Usage Meter pane closed',
     of: 'of',
     today: 'today',
     lessThanMinute: 'less than 1 min',

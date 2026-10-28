@@ -14,10 +14,8 @@ export type Row = {
   detail: string
   /** The part of the note (`reset` or `detail`) drawn in the title's color, not dim: the tokens, the time left. */
   strong: string
-  /** The short title the single-line view uses: `Contexto`, `Límite 5h`, `Semanal`. */
+  /** The short title the band uses: `Contexto`, `Límite 5h`, `Semanal`. */
   short: string
-  /** What the single-line view shows in parentheses: the tokens (`245k`) or the time left (`1h 52m`); empty when unknown. */
-  brief: string
 }
 
 export const CONTEXT_ACCENT = '#60a5fa'
@@ -68,20 +66,6 @@ export const shortDate = (at: Date, now: Date, t: Texts) => {
 export const longDate = (at: Date, t: Texts) =>
   t.weekDate(t.weekdays[at.getDay()], pad2(at.getDate()), t.months[at.getMonth()])
 
-/** `3d 20h`, `1h 52m`, `45m`; `<1m` below a minute: the time left in its shortest form. */
-export const compactRelative = (ms: number) => {
-  const minutes = Math.floor(Math.max(0, ms) / 60000)
-  const days = Math.floor(minutes / 1440)
-  const hours = Math.floor((minutes % 1440) / 60)
-  const mins = minutes % 60
-
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
-  if (minutes > 0) return `${mins}m`
-
-  return '<1m'
-}
-
 /** Milliseconds until the window resets; null without a valid timestamp. */
 const msUntil = (resetsAt: string | undefined, nowMs: number) => {
   if (!resetsAt) return null
@@ -96,13 +80,6 @@ export const resetRelative = (resetsAt: string | undefined, nowMs: number, t: Te
   const ms = msUntil(resetsAt, nowMs)
 
   return ms === null ? '' : relative(ms, t)
-}
-
-/** The same time left in its shortest form (`compactRelative`); empty without a valid timestamp. */
-export const resetCompact = (resetsAt: string | undefined, nowMs: number) => {
-  const ms = msUntil(resetsAt, nowMs)
-
-  return ms === null ? '' : compactRelative(ms)
 }
 
 export const resetText = (kind: string, resetsAt: string | undefined, nowMs: number, t: Texts) => {
@@ -139,8 +116,7 @@ export const rowOf = (limit: UsageLimit, nowMs: number, t: Texts): Row | null =>
     reset: resetText(limit.kind, limit.resetsAt, nowMs, t),
     detail: '',
     strong: resetRelative(limit.resetsAt, nowMs, t),
-    short: names.short,
-    brief: resetCompact(limit.resetsAt, nowMs)
+    short: names.short
   }
 }
 
@@ -247,8 +223,7 @@ export const contextRow = (context: ContextReading, t: Texts): Row => {
     reset: '',
     detail: tokensText(context, t),
     strong: context.tokens === null ? '' : compactTokens(context.tokens),
-    short: t.contextShort,
-    brief: context.tokens === null ? '' : compactTokens(context.tokens)
+    short: t.contextShort
   }
 }
 

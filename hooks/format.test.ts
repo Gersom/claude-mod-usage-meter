@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
 import {
-  compactRelative,
   compactTokens,
   contextRow,
   inlineFits,
@@ -10,7 +9,6 @@ import {
   longDate,
   percentBadge,
   relative,
-  resetCompact,
   resetRelative,
   resetText,
   rowOf,
@@ -101,51 +99,18 @@ describe('resetText', () => {
   })
 })
 
-describe('compactRelative', () => {
-  const min = 60000
-
-  test('days with hours, hours with minutes, minutes alone', () => {
-    expect(compactRelative((3 * 1440 + 20 * 60 + 9) * min)).toBe('3d 20h')
-    expect(compactRelative((60 + 52) * min)).toBe('1h 52m')
-    expect(compactRelative(45 * min)).toBe('45m')
-  })
-
-  test('below a minute, or already past', () => {
-    expect(compactRelative(30000)).toBe('<1m')
-    expect(compactRelative(-1000)).toBe('<1m')
-  })
-})
-
-describe('resetCompact', () => {
+describe('short titles', () => {
   const now = new Date(2026, 9, 8, 16, 30).getTime()
 
-  test('the time left in its shortest form', () => {
-    expect(resetCompact(new Date(2026, 9, 8, 18, 22).toISOString(), now)).toBe('1h 52m')
-  })
-
-  test('no or invalid timestamp gives nothing', () => {
-    expect(resetCompact(undefined, now)).toBe('')
-    expect(resetCompact('nope', now)).toBe('')
-  })
-})
-
-describe('single-line view data', () => {
-  const now = new Date(2026, 9, 8, 16, 30).getTime()
-
-  test('the context gives its short title and its tokens', () => {
+  test('the context gives its short title', () => {
     expect(contextRow(reading(30, 245000), es).short).toBe('Contexto')
-    expect(contextRow(reading(30, 245000), es).brief).toBe('245k')
-    expect(contextRow(reading(30), es).brief).toBe('')
   })
 
-  test('the limits give their short title and the time left', () => {
+  test('the limits give their short title', () => {
     const at = new Date(2026, 9, 8, 18, 22).toISOString()
 
-    expect(rowOf({ kind: 'five_hour', percentUsed: 17, resetsAt: at }, now, es)).toMatchObject({
-      short: 'Límite 5h',
-      brief: '1h 52m'
-    })
-    expect(rowOf({ kind: 'seven_day', percentUsed: 26 }, now, es)).toMatchObject({ short: 'Semanal', brief: '' })
+    expect(rowOf({ kind: 'five_hour', percentUsed: 17, resetsAt: at }, now, es)?.short).toBe('Límite 5h')
+    expect(rowOf({ kind: 'seven_day', percentUsed: 26 }, now, es)?.short).toBe('Semanal')
   })
 })
 

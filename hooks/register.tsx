@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, RenderElement, RenderNode } from 'claude-code'
+import type { EngineInterface, Register, RenderNode } from 'claude-code'
 
-import type { Category, ContextReading, Lang, Usage, View } from '../types'
+import type { Category, ContextReading, Lang, Usage } from '../types'
 import type { Row } from './format'
 import { DEFAULT_LANG, detectLang, otherLang, textsOf } from './i18n'
 import {
@@ -17,6 +17,12 @@ import {
   withPercent
 } from './format'
 
+const NAME = 'Usage Meter'
+/** The id of the pane (1-64 of letters, digits, `_`, `-`). */
+const PANE_ID = 'usage-meter'
+/** The columns and body rows the pane asks for: three measures with their bars, the legend and the blank lines between them. */
+const PANE_COLUMNS = 60
+const PANE_ROWS = 18
 const BORDER_COLOR = '#4b5563'
 const INDENT = 2
 const GAP = 3
@@ -25,12 +31,17 @@ const EASE = 0.35
 
 const usage = atom({ plugin: 'usage-meter', key: 'usage' } as const, null)
 const shown = atom({ plugin: 'usage-meter', key: 'shown' } as const, {} as Record<string, number>)
-const expanded = atom({ plugin: 'usage-meter', key: 'expanded' } as const, false)
-const viewMode = atom({ plugin: 'usage-meter', key: 'view' } as const, 'full' as View)
+/** Whether the pane is open: set when the button or the command opens it, cleared when it closes, whoever closes it. */
+const paneOpen = atom({ plugin: 'usage-meter', key: 'paneOpen' } as const, false)
 const langMode = atom({ plugin: 'usage-meter', key: 'lang' } as const, null as Lang | null)
 
-/** The view the button rotates to from each one. */
-const NEXT_VIEW: Record<View, View> = { full: 'compact', compact: 'line', line: 'full' }
+/**
+ * Whether the pane is open, as a plain module variable: the `/usage-meter` command has to decide what to do without an `await` before
+ * `$.ui.open` (the engine counts an open as the person's own only when it is the handler's first asynchronous step), so it cannot `read` the
+ * atom. It follows the atom: every write below sets both, and `session.start` reads it again, so a reload of the module (which loses
+ * variables, not atoms) is mended with the next session. A stale value costs a redundant `ui.open` of an open pane, which the engine only retitles.
+ */
+let paneIsOpen = false
 
 /** Whether what another hook drew has nothing to show: no text, no border, nothing inside. */
 const isEmpty = (node: RenderNode | null | undefined): boolean => {
@@ -80,6 +91,56 @@ const ensureLang = async ($: EngineInterface) => {
   await update($, langMode, current => current ?? detectLang(language))
 }
 
+/** The words of the language in force; the language is settled first, so an event or a press calls it, and a draw reads the atom itself. */
+const textsFor = async ($: EngineInterface) => {
+  await ensureLang($)
+
+  return textsOf((await read($, langMode)) ?? DEFAULT_LANG)
+}
+
+/** Sets the pane's flag, atom and mirror together. */
+const setPaneOpen = async ($: EngineInterface, value: boolean) => {
+  paneIsOpen = value
+  await update($, paneOpen, () => value)
+}
+
+/** Closes the pane if it is open and clears the flag here: the engine leaves a plugin's own hook out of the close the plugin makes, so the `ui.close` hook below only hears the person's. */
+const closePane = async ($: EngineInterface) => {
+  if (!(await read($, paneOpen))) return
+
+  await $.ui.close({ id: PANE_ID })
+  await setPaneOpen($, false)
+}
+
+/**
+ * Opens the pane: `$.ui.open` is the first asynchronous step, so the engine still sees it as the person's own press or command and places it
+ * at any width. Resolves `null` once it is on screen, or the engine's reason when this surface places no panes; nothing is left waiting then.
+ */
+const openPane = async ($: EngineInterface) => {
+  const opened = await $.ui.open({ id: PANE_ID, columns: PANE_COLUMNS, rows: PANE_ROWS, title: NAME })
+
+  if (opened.isPlaced) {
+    await setPaneOpen($, true)
+
+    return null
+  }
+
+  // Open but undrawn: leave nothing waiting to pop up later on its own.
+  await $.ui.close({ id: PANE_ID })
+
+  return opened.reason
+}
+
+/** The band's button: opens the pane, or closes it if it is open. Only a press or the command opens it, never the meter on its own. A surface that places no panes gets a toast. */
+const togglePane = async ($: EngineInterface, isOpen: boolean) => {
+  // `isOpen` is what the band drew, so the open call is the handler's first await.
+  if (isOpen) return closePane($)
+
+  const reason = await openPane($)
+
+  if (reason !== null) $.ui.toast((await textsFor($)).paneUnavailable(reason))
+}
+
 /** The running glide of each row, by key: the percent it moves toward and the timer that moves it. */
 const glides = new Map<string, { target: number; timer: { cancel: () => void } }>()
 
@@ -127,6 +188,9 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await ensureLang($)
 
+    // The command's mirror follows the atom again (a reload loses it).
+    paneIsOpen = await read($, paneOpen)
+
     try {
       const now = await $.session.usage()
       const reading: Usage = { context: contextOf(now.context, await categoriesOf($)), limits: now.rateLimits }
@@ -136,6 +200,12 @@ export const register: Register = on => {
     } catch {
       // No reading yet: the band appears with the first session.measure.
     }
+
+    await $.command.register({
+      argumentHint: '[open|close]',
+      description: (await textsFor($)).commandDescription,
+      name: 'usage-meter'
+    })
 
     return next(e)
   })
@@ -151,6 +221,44 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // The person's close mark or key leaves the flag, and so the button, in step with the pane (the button's own close clears it in `closePane`).
+  on('ui.close', { id: PANE_ID }, async ($, e, next) => {
+    const closed = await next(e)
+
+    await setPaneOpen($, false)
+
+    return closed
+  })
+
+  // `/usage-meter` opens or closes the pane: with no argument it toggles, `open` only opens, `close` only closes. Its person's own
+  // request places the pane at any width. The decision uses the mirror, so `$.ui.open` is the first `await` of an opening.
+  on('command.run', { command: 'usage-meter' }, async ($, e) => {
+    const arg = e.args.trim().toLowerCase()
+    const isKnown = arg === '' || arg === 'open' || arg === 'close'
+
+    if (isKnown && !paneIsOpen && arg !== 'close') {
+      const reason = await openPane($)
+      const t = await textsFor($)
+
+      if (reason === null) return { text: t.paneOpened }
+
+      $.ui.toast(t.paneUnavailable(reason))
+
+      return { text: t.paneUnavailable(reason) }
+    }
+
+    const t = await textsFor($)
+
+    if (!isKnown) return { text: t.commandUsage }
+
+    // Open already (`open`, or the toggle's turn to close), or closed already (`close`).
+    if (arg !== 'open') await closePane($)
+
+    return { text: arg === 'open' || paneIsOpen ? t.paneOpened : t.paneClosed }
+  })
+
+  // The band is one line: the name, the three percentages and the two buttons. The detail is in the pane, which only the button or the
+  // command opens: a pane the mod opened by itself would not be placed under 144 columns, so nothing is ever opened unasked.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     // What other hooks draw in the band (cache-watch's) stays; the meter goes under it.
     const below = await next(e)
@@ -171,8 +279,66 @@ export const register: Register = on => {
     }
 
     const { Box, Button, Text } = $.ui.resolve(e)
-    const open = await read($, expanded)
-    const view = await read($, viewMode)
+    const isPaneOpen = await read($, paneOpen)
+    const rows = targets.map(target => withPercent(target, values[target.key] ?? target.percent))
+
+    const meter = (
+      <Box borderStyle="round" borderColor={BORDER_COLOR} paddingX={1}>
+        {/* One line, the buttons at its right end: what does not fit is cut off, never wrapped. */}
+        <Box flexGrow={1} flexShrink={1}>
+          <Text wrap="truncate-end">
+            <Text bold dimColor>{`${NAME}: `}</Text>
+            {rows.map((row, index) => (
+              <Text key={row.key}>
+                {index > 0 ? <Text dimColor>{' · '}</Text> : null}
+                <Text bold>{`${row.short} `}</Text>
+                <Text bold color="black" backgroundColor={row.level}>
+                  {percentBadge(row.percent)}
+                </Text>
+              </Text>
+            ))}
+          </Text>
+        </Box>
+        <Box flexShrink={0} marginLeft={2}>
+          <Button key="pane" plain dimColor onPress={() => void togglePane($, isPaneOpen)}>
+            {`[${isPaneOpen ? t.close : t.open}]`}
+          </Button>
+          <Box marginLeft={1}>
+            <Button
+              key="lang"
+              plain
+              dimColor
+              onPress={() => void update($, langMode, value => otherLang(value ?? DEFAULT_LANG))}
+            >
+              {`[${lang.toUpperCase()}]`}
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+    )
+
+    return isEmpty(below) ? meter : <Box flexDirection="column">{below}{meter}</Box>
+  })
+
+  // The pane, opened only by the band's button or the command: every measure with its bar, and under Contexto the segmented bar with
+  // the legend of categories, always open. It has no frame of its own and only reads.
+  on('ui.render', { component: 'Pane', requestId: PANE_ID }, async ($, e) => {
+    const current = await read($, usage)
+    const nowMs = await $.clock.now()
+    const values = await read($, shown)
+    const t = textsOf((await read($, langMode)) ?? DEFAULT_LANG)
+    const targets = current === null ? [] : rowsOf(current, nowMs, t)
+    const { Box, Text } = $.ui.resolve(e)
+
+    if (current === null || targets.length === 0) {
+      return (
+        <Box flexDirection="column">
+          <Text wrap="truncate-end" dimColor>
+            {t.nothing}
+          </Text>
+        </Box>
+      )
+    }
 
     /** The row's note, dim but for its strong part (tokens, time left), which takes the label's color. */
     const noteOf = (row: Row, before: string, after: string) => {
@@ -186,91 +352,22 @@ export const register: Register = on => {
         </Box>
       )
     }
-    // The band wears a dark gray border on every surface, which takes two columns on each side.
-    const columns = e.props.bodyColumns - 4
+    const columns = e.props.bodyColumns
     const slices = slicesOf(current.context?.categories ?? [], t)
     const total = slices.reduce((sum, slice) => sum + slice.tokens, 0)
-    const rows = targets.map(target => {
-      const row = withPercent(target, values[target.key] ?? target.percent)
+    const legend = legendLines(slices, columns)
 
-      return { target, row, inline: inlineFits(row, columns) }
-    })
-
-    // Folded, the band keeps only each measure's header line. The band holds `maxRows`, and a taller
-    // one scrolls its last rows out of view, so the blank lines between measures go when even the
-    // measures barely fit; the legend, open, is always whole.
-    const detailed = view === 'full'
-    const toggle = detailed && slices.length > 0 ? 1 : 0
-    const base = rows.reduce(
-      (sum, { row, inline }) => sum + (detailed ? 2 : 1) + (!inline && row.reset ? 1 : 0),
-      toggle + 1
-    )
-    const separated = detailed && e.props.maxRows - 2 - base >= rows.length - 1
-    const legend = open ? legendLines(slices, columns) : []
-
-    const frame = { borderStyle: 'round' as const, borderColor: BORDER_COLOR }
-
-    // One button rotates the views (full, compact, line, full) and names the one it will switch to.
-    const controls = (
-      <Box justifyContent="flex-end">
-        <Button
-          key="view"
-          plain
-          dimColor
-          onPress={() => void update($, viewMode, value => NEXT_VIEW[value])}
-        >
-          {view === 'full' ? `[-] ${t.compact}` : view === 'compact' ? `[=] ${t.oneLine}` : `[+] ${t.expand}`}
-        </Button>
-        <Box marginLeft={2}>
-          <Button
-            key="lang"
-            plain
-            dimColor
-            onPress={() => void update($, langMode, value => otherLang(value ?? DEFAULT_LANG))}
-          >
-            {`[${lang.toUpperCase()}]`}
-          </Button>
-        </Box>
-      </Box>
-    )
-
-    const stacked = (meter: RenderElement) =>
-      isEmpty(below) ? meter : <Box flexDirection="column">{below}{meter}</Box>
-
-    if (view === 'line') {
-      return stacked(
-        <Box {...frame} paddingX={1}>
-          {/* One line, the buttons at its right end: what does not fit is cut off, never wrapped. */}
-          <Box flexGrow={1} flexShrink={1}>
-            <Text wrap="truncate-end">
-              {rows.map(({ row }, index) => (
-                <Text key={row.key}>
-                  {index > 0 ? <Text dimColor>{' · '}</Text> : null}
-                  <Text bold>{`${row.short} `}</Text>
-                  <Text bold color="black" backgroundColor={row.level}>
-                    {percentBadge(row.percent)}
-                  </Text>
-                  {row.brief ? <Text dimColor>{` (${row.brief})`}</Text> : null}
-                </Text>
-              ))}
-            </Text>
-          </Box>
-          <Box flexShrink={0} marginLeft={2}>
-            {controls}
-          </Box>
-        </Box>
-      )
-    }
-
-    return stacked(
-      <Box {...frame} paddingX={1} flexDirection="column">
-        {rows.map(({ target, row, inline }, index) => {
+    return (
+      <Box flexDirection="column">
+        {targets.map((target, index) => {
+          const row = withPercent(target, values[target.key] ?? target.percent)
+          const inline = inlineFits(row, columns)
           const moving = row.percent !== target.percent
           const note = row.reset || row.detail
           const segmented = row.key === 'context' && slices.length > 0
 
           return (
-            <Box key={row.key} flexDirection="column" marginTop={index > 0 && separated ? 1 : 0}>
+            <Box key={row.key} flexDirection="column" marginTop={index > 0 ? 1 : 0}>
               <Box justifyContent="space-between">
                 <Box>
                   <Text color={row.accent}>{'◆ '}</Text>
@@ -287,7 +384,7 @@ export const register: Register = on => {
                 noteOf(row, ' '.repeat(INDENT), '')
               ) : null}
               {/* The bars are Boxes that share the line by flex, so they fill it however wide it really is. */}
-              {!detailed ? null : segmented ? (
+              {segmented ? (
                 <Box height={1}>
                   {slices.map((slice, at) => (
                     <Box
@@ -305,14 +402,7 @@ export const register: Register = on => {
                   <Box flexGrow={100 - row.percent} flexShrink={0} backgroundColor={FREE_COLOR} />
                 </Box>
               )}
-              {detailed && segmented ? (
-                <Box>
-                  <Button key="categories" plain dimColor onPress={() => void update($, expanded, value => !value)}>
-                    {`${open ? '▾' : '▸'} ${t.categories}`}
-                  </Button>
-                </Box>
-              ) : null}
-              {detailed && segmented
+              {segmented
                 ? legend.map((items, at) => (
                     <Box key={at}>
                       {items.map((item, column) => (
@@ -331,7 +421,6 @@ export const register: Register = on => {
             </Box>
           )
         })}
-        {controls}
       </Box>
     )
   })
