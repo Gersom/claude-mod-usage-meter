@@ -123,7 +123,7 @@ test('the band is one line: the name, the three measures as percentages and the 
     expect(await ui.find({ type: 'Text', text: /42%/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /23%/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /7%/ })).toBeDefined()
-    expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[Abrir\]$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[ ◧ Abrir \]$/ })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'lang', text: /^\[ES\]$/ })).toBeDefined()
     expect(await ui.find({ type: 'Button' })).toBeDefined()
     // Nothing of the pane's detail: no long titles, no data in parentheses, no view or category buttons.
@@ -226,17 +226,17 @@ test('the button opens the pane and closes it, and its label follows', async ($,
 
   const ui = await $.ui.mount({ plugin: 'usage-meter', surface: 'terminal', ...BAND })
 
-  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[Abrir\]$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[ ◧ Abrir \]$/ })).toBeDefined()
   expect(calls).toEqual([])
 
   await ui.press({ key: 'pane' })
   expect(calls).toEqual(['open usage-meter'])
   expect(opened[0]).toMatchObject({ id: 'usage-meter', title: 'Usage Meter', rows: 22, columns: 60 })
-  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[Cerrar\]$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[ ◧ Cerrar \]$/ })).toBeDefined()
 
   await ui.press({ key: 'pane' })
   expect(calls).toEqual(['open usage-meter', 'close usage-meter'])
-  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[Abrir\]$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[ ◧ Abrir \]$/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -395,7 +395,7 @@ test('speaks English when the settings name no language, or one the panel does n
   expect(await ui.find({ type: 'Text', text: /Context/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Weekly/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[Open\]$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[ ◧ Open \]$/ })).toBeDefined()
   expect(await ui.find({ type: 'Button', key: 'lang', text: /EN/ })).toBeDefined()
   await ui.unmount()
 
@@ -440,7 +440,7 @@ test('switches the language by hand and back, in the band and in the pane', asyn
 
   expect(await ui.find({ type: 'Text', text: /Context/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Contexto/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[Open\]$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pane', text: /^\[ ◧ Open \]$/ })).toBeDefined()
   expect(await pane.find({ type: 'Text', text: /Context window/ })).toBeDefined()
   expect(await pane.find({ type: 'Text', text: /Ventana de contexto/ })).toBeUndefined()
   expect(await ui.find({ type: 'Button', key: 'lang', text: /EN/ })).toBeDefined()

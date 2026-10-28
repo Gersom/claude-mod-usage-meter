@@ -297,7 +297,7 @@ export const register: Register = on => {
         </Box>
         <Box flexShrink={0} marginLeft={2}>
           <Button key="pane" plain dimColor onPress={() => void togglePane($, isPaneOpen)}>
-            {`[${isPaneOpen ? t.close : t.open}]`}
+            {`[ ◧ ${isPaneOpen ? t.close : t.open} ]`}
           </Button>
           <Box marginLeft={1}>
             <Button

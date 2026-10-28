@@ -12,18 +12,16 @@ Hook para Claude Code que muestra el uso de la sesión y del plan en dos partes:
 - La banda muestra solo el porcentaje de cada medida. El panel, además, en los dos límites la fecha/hora de restablecimiento (`resetsAt`, convertida a la hora local) y, en el contexto, los tokens usados sobre la ventana, en gris atenuado y abreviados (`k`, `M`); sin costos.
 - **Categorías del contexto (panel):** barra a todo el ancho con un color por categoría (la parte libre en gris oscuro) y una leyenda con nombre, tokens y porcentaje de la ventana, siempre abierta. Las categorías diferidas (fuera de la ventana) se omiten, y cada categoría con tokens ocupa al menos una celda. Los nombres son los del motor (`System prompt`, `Messages`…); solo `Libre` y `Búfer` se traducen. El desglose se estima en local (`breakdown: 'summary'`): no hace llamadas de red, y sus totales pueden diferir un poco de los tokens de la fila. Si la sesión no entrega desglose, se omite y queda la fila sola.
 - Si el plan no reporta límites (por ejemplo, una cuenta que no es de suscripción), esas medidas se omiten y queda solo el contexto.
-- **El panel nunca se abre solo:** solo con el botón `[Abrir]` de la banda o con el comando `/usage-meter`.
+- **El panel nunca se abre solo:** solo con el botón `[ ◧ Abrir ]` de la banda o con el comando `/usage-meter`.
 
 ## Diseño
 
 ### Banda sobre el prompt
 
-Una sola línea, sin borde: el nombre fijo `Usage Meter:`, las tres medidas con su título corto y el porcentaje, y al final los botones `[Abrir]` (o `[Cerrar]`) e idioma:
+Una sola línea, sin borde: el nombre fijo `Usage Meter:`, las tres medidas con su título corto y el porcentaje, y al final los botones `[ ◧ Abrir ]` (o `[ ◧ Cerrar ]`) e idioma:
 
 ```
-╭──────────────────────────────────────────────────────────────────────────╮
-│ Usage Meter: Contexto 42% · Límite 5h 23% · Semanal 7%      [Abrir] [ES] │
-╰──────────────────────────────────────────────────────────────────────────╯
+Usage Meter: Contexto 42% · Límite 5h 23% · Semanal 7%      [ ◧ Abrir ] [ES]
 ```
 
 - **Nombre:** `Usage Meter` es fijo y no se traduce; los títulos cortos (`Contexto`, `Límite 5h`, `Semanal`) sí.
@@ -67,7 +65,7 @@ Restablece en 3 d 4 h (lun 09 de oct)
 
 ### Vistas y botones
 
-- **`[Abrir]` / `[Cerrar]`:** abre el panel o lo cierra, según esté abierto. Nunca se abre solo.
+- **`[ ◧ Abrir ]` / `[ ◧ Cerrar ]`:** abre el panel o lo cierra, según esté abierto. Nunca se abre solo.
 - **`[ES]` / `[EN]`:** cambia el idioma de la banda y del panel (ver Idioma).
 - **`/usage-meter`:** sin argumento alterna el panel; `/usage-meter open` solo lo abre y `/usage-meter close` solo lo cierra. Se registra al empezar la sesión.
 - **Sin soporte de paneles:** si la superficie no coloca el panel, no queda nada pendiente y un aviso (toast) da el motivo. Un panel que el propio mod abriera solo no se colocaría por debajo de 144 columnas, por eso solo se abre a petición.
@@ -176,6 +174,6 @@ usage-meter/
 
 - El tiempo relativo se recalcula en cada medición (después de cada turno), no segundo a segundo.
 - Terminales angostas: en la banda, si no caben las tres medidas, se corta el final de su texto con `…` (los botones se conservan).
-- El panel solo se coloca si la superficie admite paneles; si no, el botón y el comando avisan con el motivo. Como el mod nunca lo abre solo, hay que pulsar `[Abrir]` o usar `/usage-meter` en cada sesión: el estado `paneOpen` sigue al panel real, pero el mod no lo reabre al empezar.
+- El panel solo se coloca si la superficie admite paneles; si no, el botón y el comando avisan con el motivo. Como el mod nunca lo abre solo, hay que pulsar `[ ◧ Abrir ]` o usar `/usage-meter` en cada sesión: el estado `paneOpen` sigue al panel real, pero el mod no lo reabre al empezar.
 - El alto del panel (18 filas) cubre las tres medidas con una leyenda de hasta unas cinco líneas; con más categorías o un ancho menor, las últimas líneas pueden quedar fuera de vista.
 - Los tests no cubren la animación ni el dibujo real del panel (solo su contenido y la apertura y el cierre con un motor simulado); el panel lateral no se ha probado a mano en una sesión interactiva.
