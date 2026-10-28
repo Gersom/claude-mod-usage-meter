@@ -2,7 +2,7 @@
   "name": "usage-meter",
   "version": "1.0.0",
   "author": { "name": "Gersom" },
-  "description": "Recuadro sobre el prompt con el porcentaje de contexto y de los límites de 5 horas y semanal, con su hora de restablecimiento.",
+  "description": "Banda de una línea sobre el prompt con el porcentaje de contexto y de los límites de 5 horas y semanal, y un panel lateral con el detalle (barras, categorías del contexto y hora de restablecimiento).",
   "license": "MIT",
   "repository": "https://github.com/Gersom/claude-mod-usage-meter",
   "homepage": "https://github.com/Gersom/claude-mod-usage-meter",
