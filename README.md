@@ -1,37 +1,39 @@
+English | [Español](./README.es.md)
+
 # usage-meter
 
-Hook para Claude Code que muestra el uso de la sesión y del plan en dos partes: una banda de una línea sobre el prompt, solo con porcentajes, y un panel lateral con el detalle:
+Claude Code hook that shows session and plan usage in two parts: a one-line band above the prompt, with percentages only, and a side pane with the details:
 
-- **Contexto:** cuánto de la ventana de contexto de la sesión está usado, con los tokens al lado (`84k de 200k`) y, debajo, una barra segmentada y una leyenda con el desglose por categorías.
-- **Límite de 5 horas:** porcentaje usado de la ventana de 5 horas del plan, y la fecha/hora en que se restablece.
-- **Límite semanal:** porcentaje usado de la ventana de 7 días del plan, y la fecha/hora en que se restablece.
+- **Context:** how much of the session's context window is used, with the tokens next to it (`84k of 200k`) and, below, a segmented bar and a legend with the breakdown by category.
+- **5-hour limit:** percentage used of the plan's 5-hour window, and the date/time it resets.
+- **Weekly limit:** percentage used of the plan's 7-day window, and the date/time it resets.
 
-## Comportamiento
+## Behavior
 
-- La banda y el panel se actualizan solos, cada vez que cambia alguna de las medidas.
-- La banda muestra solo el porcentaje de cada medida. El panel, además, en los dos límites la fecha/hora de restablecimiento (`resetsAt`, convertida a la hora local) y, en el contexto, los tokens usados sobre la ventana, en gris atenuado y abreviados (`k`, `M`); sin costos.
-- **Categorías del contexto (panel):** barra a todo el ancho con un color por categoría (la parte libre en gris oscuro) y una leyenda con nombre, tokens y porcentaje de la ventana, siempre abierta. Las categorías diferidas (fuera de la ventana) se omiten, y cada categoría con tokens ocupa al menos una celda. Los nombres son los del motor (`System prompt`, `Messages`…); solo `Libre` y `Búfer` se traducen. El desglose se estima en local (`breakdown: 'summary'`): no hace llamadas de red, y sus totales pueden diferir un poco de los tokens de la fila. Si la sesión no entrega desglose, se omite y queda la fila sola.
-- Si el plan no reporta límites (por ejemplo, una cuenta que no es de suscripción), esas medidas se omiten y queda solo el contexto.
-- **El panel nunca se abre solo:** solo con el botón `[ ◧ Abrir ]` de la banda o con el comando `/usage-meter`.
+- The band and the pane update on their own, every time any of the measures changes.
+- The band shows only the percentage of each measure. The pane also shows, on the two limits, the reset date/time (`resetsAt`, converted to local time) and, on the context, the tokens used over the window, in dimmed gray and abbreviated (`k`, `M`); no costs.
+- **Context categories (pane):** a full-width bar with one color per category (the free part in dark gray) and a legend with name, tokens and percentage of the window, always open. Deferred categories (outside the window) are omitted, and each category with tokens takes up at least one cell. The names are the engine's (`System prompt`, `Messages`…); only `Free` and `Buffer` are translated. The breakdown is estimated locally (`breakdown: 'summary'`): it makes no network calls, and its totals may differ a little from the tokens in the row. If the session returns no breakdown, it is omitted and only the row remains.
+- If the plan reports no limits (for example, a non-subscription account), those measures are omitted and only the context remains.
+- **The pane never opens on its own:** only with the `[ ◧ Open ]` button on the band or with the `/usage-meter` command.
 
-## Diseño
+## Design
 
-### Banda sobre el prompt
+### Band above the prompt
 
-Una sola línea, sin borde: el nombre fijo `Usage Meter:`, las tres medidas con su título corto y el porcentaje, y al final los botones `[ ◧ Abrir ]` (o `[ ◧ Cerrar ]`) e idioma:
+A single line, no border: the fixed name `Usage Meter:`, the three measures with their short title and the percentage, and at the end the `[ ◧ Open ]` (or `[ ◧ Close ]`) and language buttons:
 
 ```
 Usage Meter: Contexto 42% · Límite 5h 23% · Semanal 7%      [ ◧ Abrir ] [ES]
 ```
 
-- **Nombre:** `Usage Meter` es fijo y no se traduce; los títulos cortos (`Contexto`, `Límite 5h`, `Semanal`) sí.
-- **Porcentaje:** recuadro con fondo del color del umbral y texto negro, en negrita: verde hasta 60%, amarillo de 60% a 80%, rojo por encima de 80%. Sin datos entre paréntesis: eso va en el panel.
-- **Botones:** al final y fijos; si la línea no cabe, se corta el texto del medio con `…`, nunca los botones, y no pasa a otra línea.
-- **Convivencia:** lo que otros hooks dibujen en la franja se conserva y la banda va debajo. Si hay una encuesta o aún no hay lecturas, no dibuja nada.
+- **Name:** `Usage Meter` is fixed and is not translated; the short titles (`Context`, `5-hour limit`, `Weekly`) are.
+- **Percentage:** a box with a background in the threshold color and black text, in bold: green up to 60%, yellow from 60% to 80%, red above 80%. No data in parentheses: that goes in the pane.
+- **Buttons:** at the end and fixed; if the line does not fit, the text in the middle is cut with `…`, never the buttons, and it does not wrap to another line.
+- **Coexistence:** whatever other hooks draw in the strip is kept and the band goes below it. If there is a survey or there are no readings yet, it draws nothing.
 
-### Panel lateral
+### Side pane
 
-Siempre la vista completa. No lleva borde propio ni botones. Un bloque por medida, separados por dos líneas en blanco. Cada bloque tiene una cabecera (`◆`, etiqueta en negrita, texto a la derecha y el porcentaje en un recuadro de color) y una barra a todo el ancho. El subtítulo de cada medida (los tokens del contexto, el texto de restablecimiento de los límites) va siempre en una línea debajo de la barra, pegado a la izquierda y sin sangría. Bajo el subtítulo de `Contexto`, con una línea en blanco de por medio, va la leyenda de categorías, siempre abierta:
+Always the full view. It has no border of its own and no buttons. One block per measure, separated by two blank lines. Each block has a header (`◆`, bold label, text on the right and the percentage in a colored box) and a full-width bar. The subtitle of each measure (the context tokens, the reset text of the limits) always goes on a line below the bar, flush left and with no indentation. Under the `Context window` subtitle, with a blank line in between, goes the category legend, always open:
 
 ```
 ◆ Ventana de contexto                                   42%
@@ -52,108 +54,108 @@ Restablece en 2 h 10 min (hoy 18:40)
 Restablece en 3 d 4 h (lun 09 de oct)
 ```
 
-- **Tamaño:** pide 60 columnas y 22 filas (`PANE_COLUMNS`, `PANE_ROWS`); el ancho del contenido es el que da el motor (`bodyColumns`).
-- **Títulos:** `Ventana de contexto`, `Límite de 5 horas` y `Límite semanal`.
-- **Colores por medida:** el `◆` de `Ventana de contexto` va en azul (`#60a5fa`); el de los dos límites en violeta (`#a78bfa`). La etiqueta va en negrita, sin color.
-- **Subtítulo:** debajo de la barra, en gris atenuado, salvo el dato principal, que va en el blanco del título (sin negrita): los tokens usados (`84k` de `84k de 200k`) y el tiempo que falta (`2 h 10 min`, `3 d 4 h`).
-- **Barra:** una sola por medida, a todo el ancho; lo lleno en el color del umbral (o de la medida mientras se anima) y lo vacío en gris oscuro. En `Contexto`, la barra segmentada por categorías reemplaza a la simple. Las barras son cajas que se reparten la línea por proporción (no texto repetido), así que llenan el ancho real sin partirse en dos líneas.
-- **Leyenda:** las categorías van seguidas (`■ nombre (% ≈ tokens)`), y pasan a otra línea cuando no caben; no van en columnas. Todo el texto va en gris (`#9ca3af`), más oscuro que el normal, para que destaquen los cuadros de color; los tokens en negrita.
-- **Colores de las categorías:** por nombre: `System prompt` azul, `System tools` celeste, `MCP server instructions` naranja, `Custom agents` verde, `Memory files` amarillo, `Skills` rosa, `Messages` violeta. Una categoría que el mod no conoce toma el siguiente color de reserva. `Libre` y `Búfer` van en gris oscuro.
-- **Sin lecturas:** si se abre antes de la primera medición, dice `Aún no hay lecturas.` (`No readings yet.`).
-- **Animación:** el porcentaje y la barra avanzan desde el valor anterior hasta el nuevo (unos 40 ms por paso). Si el valor no cambia, no se anima. La primera vez que aparece una medida se dibuja directamente, sin animación.
-- **Restablecimiento:** tiempo relativo primero y fecha entre paréntesis, en gris atenuado. El límite de 5 horas muestra la hora (`hoy 18:40`, o el día si cruza la medianoche); el semanal muestra día de la semana y fecha, sin hora (`lun 09 de oct`). Va como subtítulo, debajo de la barra.
+- **Size:** asks for 60 columns and 22 rows (`PANE_COLUMNS`, `PANE_ROWS`); the content width is the one the engine gives (`bodyColumns`).
+- **Titles:** `Context window`, `5-hour limit` and `Weekly limit`.
+- **Colors per measure:** the `◆` of `Context window` is blue (`#60a5fa`); the one of the two limits is violet (`#a78bfa`). The label is bold, with no color.
+- **Subtitle:** below the bar, in dimmed gray, except for the main figure, which is in the title's white (not bold): the tokens used (`84k` of `84k of 200k`) and the time left (`2 h 10 min`, `3 d 4 h`).
+- **Bar:** a single one per measure, full width; the filled part in the threshold color (or the measure's color while animating) and the empty part in dark gray. In `Context`, the bar segmented by category replaces the simple one. The bars are boxes that share the line by proportion (not repeated text), so they fill the real width without splitting onto two lines.
+- **Legend:** the categories run one after another (`■ name (% ≈ tokens)`), and wrap onto another line when they do not fit; they are not in columns. All the text is gray (`#9ca3af`), darker than normal, so the colored squares stand out; the tokens in bold.
+- **Category colors:** by name: `System prompt` blue, `System tools` light blue, `MCP server instructions` orange, `Custom agents` green, `Memory files` yellow, `Skills` pink, `Messages` violet. A category the mod does not know takes the next spare color. `Free` and `Buffer` are dark gray.
+- **No readings:** if it is opened before the first measurement, it says `No readings yet.` (`Aún no hay lecturas.`).
+- **Animation:** the percentage and the bar advance from the previous value to the new one (about 40 ms per step). If the value does not change, it is not animated. The first time a measure appears it is drawn directly, with no animation.
+- **Reset:** relative time first and the date in parentheses, in dimmed gray. The 5-hour limit shows the time (`today 18:40`, or the day if it crosses midnight); the weekly one shows the weekday and date, with no time (`Mon, Oct 09`). It goes as a subtitle, below the bar.
 
-### Vistas y botones
+### Views and buttons
 
-- **`[ ◧ Abrir ]` / `[ ◧ Cerrar ]`:** abre el panel o lo cierra, según esté abierto. Nunca se abre solo.
-- **`[ES]` / `[EN]`:** cambia el idioma de la banda y del panel (ver Idioma).
-- **`/usage-meter`:** sin argumento alterna el panel; `/usage-meter open` solo lo abre y `/usage-meter close` solo lo cierra. Se registra al empezar la sesión.
-- **Sin soporte de paneles:** si la superficie no coloca el panel, no queda nada pendiente y un aviso (toast) da el motivo. Un panel que el propio mod abriera solo no se colocaría por debajo de 144 columnas, por eso solo se abre a petición.
-- **Cierre:** el panel se cierra con el botón, con el comando o con su marca o tecla de cierre; el botón de la banda sigue siempre su estado.
+- **`[ ◧ Open ]` / `[ ◧ Close ]`:** opens the pane or closes it, depending on whether it is open. It never opens on its own.
+- **`[ES]` / `[EN]`:** switches the language of the band and the pane (see Language).
+- **`/usage-meter`:** with no argument it toggles the pane; `/usage-meter open` only opens it and `/usage-meter close` only closes it. It is registered when the session starts.
+- **No pane support:** if the surface does not place the pane, nothing is left pending and a notice (toast) gives the reason. A pane that the mod itself opened on its own would not be placed below 144 columns, which is why it only opens on request.
+- **Closing:** the pane is closed with the button, with the command, or with its close mark or key; the band's button always follows its state.
 
-## Idioma
+## Language
 
-La banda y el panel hablan español o inglés. Lo decide el propio mod, con diccionarios fijos en `hooks/i18n.ts`: ningún agente ni subagente traduce nada, no hay llamadas a modelos y no consume tokens.
+The band and the pane speak Spanish or English. The mod itself decides, with fixed dictionaries in `hooks/i18n.ts`: no agent or subagent translates anything, there are no model calls and it consumes no tokens.
 
-- **Automático:** al empezar la sesión (y, si hiciera falta, en la primera medición) lee `settings.language` de la configuración de Claude Code (`$.settings.read()`, ya fusionada: usuario, proyecto, política…). Es texto libre, así que reconoce el español en varias formas (`Español`, `spanish`, `es`, `es-MX`, `castellano`, sin importar mayúsculas ni tildes).
-- **Por defecto, inglés:** si no hay `settings.language`, no se puede leer o nombra un idioma que el panel no tiene (`japanese`, `french`…), el panel va en inglés.
-- **A mano:** el botón `[ES]` / `[EN]`, al final de la banda, a la derecha del botón de abrir, cambia el idioma de la banda y del panel. Una medición nueva no lo revierte, y se conserva mientras el mod siga cargado, aunque cambie la sesión (por ejemplo con `/clear`); al recargar el mod vuelve al automático.
-- **Qué cambia:** títulos (`Ventana de contexto` / `Context window`, `Límite de 5 horas` / `5-hour limit`, `Límite semanal` / `Weekly limit`), `Restablece en` / `Resets in`, `hoy` / `today`, días y fechas (`lun 09 de oct` / `Mon, Oct 09`), `de` / `of`, `Libre` / `Free`, `Búfer` / `Buffer`, los títulos cortos de la banda (`Contexto` / `Context`, `Límite 5h` / `5-hour limit`, `Semanal` / `Weekly`), `Abrir` / `Open`, `Cerrar` / `Close` y los textos del comando y de los avisos. `Usage Meter` no se traduce.
-- **Qué no cambia:** los nombres de las categorías (`System prompt`, `Messages`…) los entrega el motor en inglés y se muestran tal cual en ambos idiomas. Las unidades de tiempo (`2 h 10 min`, `3 d 4 h`) son iguales en los dos.
-- **Agregar otro idioma:** un diccionario más en `TEXTS` (`hooks/i18n.ts`), su código en `Lang` (`types/index.d.ts`) y cómo se reconoce en `detectLang`.
+- **Automatic:** when the session starts (and, if needed, on the first measurement) it reads `settings.language` from Claude Code's configuration (`$.settings.read()`, already merged: user, project, policy…). It is free text, so it recognizes Spanish in several forms (`Español`, `spanish`, `es`, `es-MX`, `castellano`, regardless of case or accents).
+- **English by default:** if there is no `settings.language`, it cannot be read or it names a language the pane does not have (`japanese`, `french`…), the pane is in English.
+- **By hand:** the `[ES]` / `[EN]` button, at the end of the band, to the right of the open button, switches the language of the band and the pane. A new measurement does not revert it, and it is kept while the mod stays loaded, even if the session changes (for example with `/clear`); when the mod is reloaded it goes back to automatic.
+- **What changes:** titles (`Ventana de contexto` / `Context window`, `Límite de 5 horas` / `5-hour limit`, `Límite semanal` / `Weekly limit`), `Restablece en` / `Resets in`, `hoy` / `today`, days and dates (`lun 09 de oct` / `Mon, Oct 09`), `de` / `of`, `Libre` / `Free`, `Búfer` / `Buffer`, the band's short titles (`Contexto` / `Context`, `Límite 5h` / `5-hour limit`, `Semanal` / `Weekly`), `Abrir` / `Open`, `Cerrar` / `Close` and the texts of the command and the notices. `Usage Meter` is not translated.
+- **What does not change:** the category names (`System prompt`, `Messages`…) are given by the engine in English and are shown as they are in both languages. The time units (`2 h 10 min`, `3 d 4 h`) are the same in both.
+- **Adding another language:** one more dictionary in `TEXTS` (`hooks/i18n.ts`), its code in `Lang` (`types/index.d.ts`) and how it is recognized in `detectLang`.
 
-Los diagramas de este README están en español.
+The diagrams in this README are in Spanish.
 
-## Tipo y fuente de datos
+## Type and data source
 
-- **Tipo:** hook (plugin de Claude Code).
-- **Eventos:** `session.start` (lectura inicial y registro del comando) y `session.measure`, que entrega el contexto (`context.percent`, `context.tokens` y `context.window`) y las ventanas de límite (`rateLimits`, con `five_hour` y `seven_day` y su `percentUsed`).
-- **Categorías:** `$.session.usage({ breakdown: 'summary' })`, que `session.measure` no trae; se pide al empezar la sesión y en cada medición.
-- **Idioma:** `$.settings.read()`, clave `language`; se lee una vez por sesión.
-- **Dibujo:** hook `ui.render` sobre `AbovePrompt` (la banda de una línea) y sobre `Pane` con `requestId: 'usage-meter'` (el panel lateral, que se abre con `$.ui.open`).
-- **Panel y comando:** `$.ui.open` / `$.ui.close`, el hook `ui.close` (para limpiar el estado `paneOpen` cuando la persona lo cierra), `$.command.register` en `session.start` y el hook `command.run` de `/usage-meter`.
+- **Type:** hook (Claude Code plugin).
+- **Events:** `session.start` (initial reading and command registration) and `session.measure`, which delivers the context (`context.percent`, `context.tokens` and `context.window`) and the limit windows (`rateLimits`, with `five_hour` and `seven_day` and their `percentUsed`).
+- **Categories:** `$.session.usage({ breakdown: 'summary' })`, which `session.measure` does not bring; it is requested when the session starts and on every measurement.
+- **Language:** `$.settings.read()`, key `language`; it is read once per session.
+- **Drawing:** `ui.render` hook on `AbovePrompt` (the one-line band) and on `Pane` with `requestId: 'usage-meter'` (the side pane, which is opened with `$.ui.open`).
+- **Pane and command:** `$.ui.open` / `$.ui.close`, the `ui.close` hook (to clear the `paneOpen` state when the person closes it), `$.command.register` in `session.start` and the `command.run` hook of `/usage-meter`.
 
-## Consumo de tokens
+## Token consumption
 
-El mod no consume tokens del modelo ni agrega nada al contexto:
+The mod does not consume model tokens or add anything to the context:
 
-- El manifiesto no declara skills, agentes, comandos ni servidores MCP, así que no suma descripciones ni herramientas al prompt del sistema.
-- Los hooks `session.start`, `session.measure` y `ui.close` solo observan: devuelven `next(e)` sin modificar el evento, y no inyectan mensajes ni recordatorios. `ui.render` solo dibuja la banda y el panel en la interfaz. El comando `/usage-meter` lo registra el mod en tiempo de ejecución (no está en el manifiesto) y responde con un texto fijo, sin llamar al modelo: no consume tokens.
-- `$.session.usage()` sin desglose no cuesta nada, y `{ breakdown: 'summary' }` estima en local (a diferencia de `'full'`, que usa la API de conteo de tokens), así que llamarlo en cada medición no hace llamadas de red. No hace falta optimizarlo.
+- The manifest declares no skills, agents, commands or MCP servers, so it adds no descriptions or tools to the system prompt.
+- The `session.start`, `session.measure` and `ui.close` hooks only observe: they return `next(e)` without modifying the event, and inject no messages or reminders. `ui.render` only draws the band and the pane in the interface. The `/usage-meter` command is registered by the mod at runtime (it is not in the manifest) and answers with fixed text, without calling the model: it consumes no tokens.
+- `$.session.usage()` without a breakdown costs nothing, and `{ breakdown: 'summary' }` estimates locally (unlike `'full'`, which uses the token-counting API), so calling it on every measurement makes no network calls. There is no need to optimize it.
 
-## Fuera de alcance
+## Out of scope
 
-- Costos o historial de uso.
-- Alertas o bloqueos al acercarse a un límite.
+- Costs or usage history.
+- Alerts or blocks when approaching a limit.
 
-## Por decidir al construirlo
+## To decide when building it
 
-- Si el "uso del plan" es algo distinto a las ventanas de 5 horas y semanal. La API solo expone esas dos (y un `spend_limit` en gateways), así que por ahora el mod las toma como "uso del plan".
+- Whether "plan usage" is something other than the 5-hour and weekly windows. The API only exposes those two (and a `spend_limit` on gateways), so for now the mod takes them as "plan usage".
 
-## Instalación
+## Installation
 
-Requiere Claude Code 2.1.287 o superior. Se instala en un paso (Claude Code 2.1.275 o superior):
+Requires Claude Code 2.1.287 or higher. It is installed in one step (Claude Code 2.1.275 or higher):
 
 ```
 /plugin install usage-meter --marketplace Gersom/claude-mod-usage-meter
 ```
 
-O en dos pasos:
+Or in two steps:
 
 ```
 /plugin marketplace add Gersom/claude-mod-usage-meter
 /plugin install usage-meter@usage-meter
 ```
 
-También forma parte de la colección [`gersom-claude-mods`](https://github.com/Gersom/gersom-claude-mods): `/plugin marketplace add Gersom/gersom-claude-mods` y luego `/plugin install usage-meter@gersom-claude-mods`.
+It is also part of the [`gersom-claude-mods`](https://github.com/Gersom/gersom-claude-mods) collection: `/plugin marketplace add Gersom/gersom-claude-mods` and then `/plugin install usage-meter@gersom-claude-mods`.
 
-**En la app de escritorio:**
+**In the desktop app:**
 
-1. Agregar el marketplace: **Configuración → Plugins → Añadir → Añadir marketplace → Añadir desde un repositorio**, pegar la URL del repo (`https://github.com/Gersom/claude-mod-usage-meter`) y pulsar **Sincronizar**. Para toda la colección, usar `https://github.com/Gersom/gersom-claude-mods`.
-2. Encontrar el mod: en **Plugins → Descubrir**, abrir el filtro y elegir **Origen →** el nombre del marketplace (`usage-meter` o `gersom-claude-mods`). Ahí aparece `usage-meter` para instalarlo.
+1. Add the marketplace: **Settings → Plugins → Add → Add marketplace → Add from a repository**, paste the repo URL (`https://github.com/Gersom/claude-mod-usage-meter`) and click **Sync**. For the whole collection, use `https://github.com/Gersom/gersom-claude-mods`.
+2. Find the mod: in **Plugins → Discover**, open the filter and choose **Source →** the marketplace name (`usage-meter` or `gersom-claude-mods`). There `usage-meter` appears for installing.
 
-Este mod corre con tus permisos, como cualquier plugin; `claude plugin validate` lista los hooks y las llamadas que hace antes de instalarlo.
+This mod runs with your permissions, like any plugin; `claude plugin validate` lists the hooks and the calls it makes before you install it.
 
-## Uso
+## Usage
 
-Para desarrollar, cargar el mod desde la carpeta del repo en una sesión de Claude Code (terminal):
+To develop, load the mod from the repo folder in a Claude Code session (terminal):
 
 ```bash
 claude --plugin-dir .
 ```
 
-Probar y validar:
+Test and validate:
 
 ```bash
 claude plugin validate .
 claude plugin test .
 ```
 
-## Licencia y apoyo
+## License and support
 
-[MIT](./LICENSE) © Gersom. Si te sirve, puedes apoyar el proyecto con una donación por [PayPal](https://paypal.me/gersomalaja).
+[MIT](./LICENSE) © Gersom. If it is useful to you, you can support the project with a donation through [PayPal](https://paypal.me/gersomalaja).
 
-## Estructura
+## Structure
 
 ```
 usage-meter/
@@ -170,10 +172,10 @@ usage-meter/
 └── types/index.d.ts             # contrato del estado ($.state): usage, shown (porcentaje mostrado por fila), paneOpen (panel abierto) y lang (idioma)
 ```
 
-## Limitaciones conocidas
+## Known limitations
 
-- El tiempo relativo se recalcula en cada medición (después de cada turno), no segundo a segundo.
-- Terminales angostas: en la banda, si no caben las tres medidas, se corta el final de su texto con `…` (los botones se conservan).
-- El panel solo se coloca si la superficie admite paneles; si no, el botón y el comando avisan con el motivo. Como el mod nunca lo abre solo, hay que pulsar `[ ◧ Abrir ]` o usar `/usage-meter` en cada sesión: el estado `paneOpen` sigue al panel real, pero el mod no lo reabre al empezar.
-- El alto del panel (18 filas) cubre las tres medidas con una leyenda de hasta unas cinco líneas; con más categorías o un ancho menor, las últimas líneas pueden quedar fuera de vista.
-- Los tests no cubren la animación ni el dibujo real del panel (solo su contenido y la apertura y el cierre con un motor simulado). Tampoco cubren que la persona cierre el panel (hook `ui.close`) ni que `$.ui.open` sea el primer `await` del botón: el arnés de pruebas no ofrece `$.ui.close` ni deja observar ese orden, así que se verifica a mano. Lo que sí cubre el orden es el test del comando.
+- The relative time is recalculated on every measurement (after each turn), not second by second.
+- Narrow terminals: in the band, if the three measures do not fit, the end of their text is cut with `…` (the buttons are kept).
+- The pane is only placed if the surface supports panes; if not, the button and the command warn with the reason. Since the mod never opens it on its own, you have to press `[ ◧ Open ]` or use `/usage-meter` in every session: the `paneOpen` state follows the real pane, but the mod does not reopen it at start.
+- The pane height (18 rows) covers the three measures with a legend of up to about five lines; with more categories or a narrower width, the last lines may fall out of view.
+- The tests do not cover the animation or the real drawing of the pane (only its content and opening and closing with a simulated engine). Nor do they cover the person closing the pane (`ui.close` hook) or `$.ui.open` being the first `await` of the button: the test harness offers no `$.ui.close` and does not let that order be observed, so it is checked by hand. What does cover the order is the command's test.
